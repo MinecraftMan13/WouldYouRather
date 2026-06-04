@@ -371,6 +371,13 @@
       line-height: 1.5;
     }
 
+    .pending-meta {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-family: monospace;
+      margin-bottom: 0.6rem;
+    }
+
     /* "A" and "B" labels beside each option */
     .pending-option span.tag {
       display: inline-block;
@@ -398,6 +405,24 @@
       color: var(--muted);
       font-size: 0.9rem;
       padding: 1.5rem 0 0.5rem;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 0.2rem 0.65rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+
+    .status-badge.allowed {
+      background: rgba(34,197,94,0.15);
+      color: var(--success);
+    }
+
+    .status-badge.banned {
+      background: rgba(239,68,68,0.15);
+      color: var(--danger);
     }
   </style>
 </head>
@@ -474,6 +499,7 @@
     <div class="dashboard-tabs">
       <button type="button" class="tab-btn{% if active_tab == 'questions' %} active{% endif %}" data-tab="questions" onclick="showTab('questions')">Questions</button>
       <button type="button" class="tab-btn{% if active_tab == 'lobbies' %} active{% endif %}" data-tab="lobbies" onclick="showTab('lobbies')">Lobby Management</button>
+      <button type="button" class="tab-btn{% if active_tab == 'visitors' %} active{% endif %}" data-tab="visitors" onclick="showTab('visitors')">Visitors</button>
     </div>
 
     <!-- Show any error passed from Flask (e.g. empty fields) -->
@@ -524,6 +550,9 @@
 
         <!-- Show both options stacked -->
         <div class="pending-options">
+          <div class="pending-meta">
+            Submitted by {{ q.submitter_ip or 'Unknown IP' }}
+          </div>
           <div class="pending-option">
             <span class="tag a">A</span>{{ q.option_a }}
           </div>
@@ -741,6 +770,62 @@
       </div>
     </div>
 
+    <div id="tab-visitors" style="{% if active_tab == 'visitors' %}display:block;{% else %}display:none;{% endif %}">
+      <div class="card table-card">
+        <h2>Visitor IPs</h2>
+        <p class="pending-subtitle">Every public site visit is logged here. You can ban or unban IPs at any time.</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>IP Address</th>
+              <th>First Seen</th>
+              <th>Last Seen</th>
+              <th>Visits</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if visitors %}
+              {% for visitor in visitors %}
+              <tr>
+                <td><span class="id-badge">{{ visitor.ip }}</span></td>
+                <td>{{ visitor.first_seen_str }}</td>
+                <td>{{ visitor.last_seen_str }}</td>
+                <td>{{ visitor.visit_count }}</td>
+                <td>
+                  <span class="status-badge {% if visitor.banned %}banned{% else %}allowed{% endif %}">
+                    {% if visitor.banned %}Banned{% else %}Allowed{% endif %}
+                  </span>
+                </td>
+                <td>
+                  <div class="action-btns">
+                    {% if visitor.banned %}
+                    <form method="POST" action="/admin/unban-ip">
+                      <input type="hidden" name="ip" value="{{ visitor.ip }}"/>
+                      <button type="submit" class="btn btn-success">Unban</button>
+                    </form>
+                    {% else %}
+                    <form method="POST" action="/admin/ban-ip" onsubmit="return confirm('Ban this IP from the site?')">
+                      <input type="hidden" name="ip" value="{{ visitor.ip }}"/>
+                      <button type="submit" class="btn btn-danger">Ban</button>
+                    </form>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="6" class="pending-empty">No visitor IPs have been recorded yet.</td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
   </div>
   {% endif %}
 
@@ -761,6 +846,7 @@
     function showTab(tab) {
       document.getElementById('tab-questions').style.display = tab === 'questions' ? 'block' : 'none';
       document.getElementById('tab-lobbies').style.display = tab === 'lobbies' ? 'block' : 'none';
+      document.getElementById('tab-visitors').style.display = tab === 'visitors' ? 'block' : 'none';
       document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.tab === tab);
       });

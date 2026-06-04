@@ -8,6 +8,7 @@ venv/
 # App data files (contain real user votes and IPs)
 ip_log.json
 user_votes.json
+visitors.json
 __pycache__/
 *.pyc
 

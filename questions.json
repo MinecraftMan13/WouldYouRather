@@ -1,0 +1,457 @@
+[
+  {
+    "id": 1,
+    "option_a": "Have spaghetti for hair",
+    "option_b": "Sweat marinara sauce",
+    "votes_a": 1,
+    "votes_b": 0
+  },
+  {
+    "id": 2,
+    "option_a": "Only be able to whisper for the rest of your life",
+    "option_b": "Only be able to shout for the rest of your life",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 3,
+    "option_a": "Have a laugh that sounds exactly like a goat",
+    "option_b": "Sneeze so hard you do a backflip every time",
+    "votes_a": 1,
+    "votes_b": 0
+  },
+  {
+    "id": 4,
+    "option_a": "Have fingers as long as your legs",
+    "option_b": "Have legs as short as your fingers",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 5,
+    "option_a": "Only be able to communicate through interpretive dance",
+    "option_b": "Only be able to communicate through sound effects",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 6,
+    "option_a": "Everything you eat tastes like feet",
+    "option_b": "Everything you smell smells like food but you can never eat it",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 7,
+    "option_a": "Have a dog that narrates everything you do out loud",
+    "option_b": "Have a cat that silently judges you and everyone can hear its thoughts",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 8,
+    "option_a": "Only be able to sit on the floor, no chairs, ever",
+    "option_b": "Only be able to stand, no sitting or lying down, ever",
+    "votes_a": 1,
+    "votes_b": 0
+  },
+  {
+    "id": 9,
+    "option_a": "Have a tiny horse that follows you everywhere",
+    "option_b": "Have a full-sized horse that thinks it's a tiny horse and tries to sit in your lap",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 10,
+    "option_a": "Age in reverse from this point forward",
+    "option_b": "Stop aging but everyone around you does",
+    "votes_a": 1,
+    "votes_b": 0
+  },
+  {
+    "id": 11,
+    "option_a": "Always have wet socks",
+    "option_b": "Always have a popcorn kernel stuck in your teeth",
+    "votes_a": 0,
+    "votes_b": 1
+  },
+  {
+    "id": 12,
+    "option_a": "Only be able to eat food off the floor like a dog",
+    "option_b": "Only be able to drink through your nose",
+    "votes_a": 0,
+    "votes_b": 1
+  },
+  {
+    "id": 13,
+    "option_a": "Have a fog horn go off every time you have a bad idea",
+    "option_b": "Have a crowd cheer every time you do something embarrassing",
+    "votes_a": 1,
+    "votes_b": 0
+  },
+  {
+    "id": 14,
+    "option_a": "Only be able to walk sideways like a crab",
+    "option_b": "Only be able to run, no walking, ever",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 15,
+    "option_a": "Have a theme song that plays every time you enter a room",
+    "option_b": "Have a laugh track play every time something bad happens to you",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 16,
+    "option_a": "Be unable to stop doing jazz hands when you're nervous",
+    "option_b": "Break into the worm dance move every time you hear music",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 17,
+    "option_a": "Only be able to text in pirate speak",
+    "option_b": "Only be able to speak in rhymes out loud",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 18,
+    "option_a": "Have everything you say auto-corrected in real life by a stranger following you",
+    "option_b": "Have someone read all your notifications out loud in a crowded room",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 19,
+    "option_a": "Only be able to wear inflatable sumo suits in public",
+    "option_b": "Only be able to wear a full medieval knight costume everywhere",
+    "votes_a": 1,
+    "votes_b": 0
+  },
+  {
+    "id": 20,
+    "option_a": "Hiccup every time you tell a lie",
+    "option_b": "Bark like a dog every time you're surprised",
+    "votes_a": 0,
+    "votes_b": 1
+  },
+  {
+    "id": 21,
+    "option_a": "Have a seagull as your personal assistant",
+    "option_b": "Have a raccoon as your financial advisor",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 22,
+    "option_a": "Be permanently dressed like you're going to a wedding",
+    "option_b": "Be permanently dressed like you just got back from the gym",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 23,
+    "option_a": "Only be able to eat foods that are beige",
+    "option_b": "Only be able to eat foods that are purple",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 24,
+    "option_a": "Have every photo of you come out looking like a driver's license photo",
+    "option_b": "Have every video of you play back in 0.5x slow motion with sad violin music",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 25,
+    "option_a": "Only be able to high-five people instead of shaking hands",
+    "option_b": "Only be able to bow instead of saying hello or goodbye",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 26,
+    "option_a": "Play every game at 1 FPS but always win",
+    "option_b": "Play at 240 FPS but your controller disconnects whenever you clutch",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 27,
+    "option_a": "Get matched with one sweaty tryhard named \"XxNoScopeDadxX\" every game",
+    "option_b": "Get matched with one teammate who says \"trust me\" and immediately sells",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 28,
+    "option_a": "Have your loot always be common trash, but never get third partied",
+    "option_b": "Get legendary loot every match, but only after you die for it",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 29,
+    "option_a": "Hear the victory music in your head after every loss",
+    "option_b": "Hear the defeat sound effect every time you open a menu",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 30,
+    "option_a": "Main a character everyone calls \"bad\" but you are weirdly cracked with",
+    "option_b": "Main the top-tier character and still get diffed by toddlers",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 31,
+    "option_a": "Only win ranked games at 3 a.m. when the lobby is half asleep",
+    "option_b": "Only win ranked games when your mom calls you for dinner mid-match",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 32,
+    "option_a": "Spawn with a god-tier skin but aim like a goldfish",
+    "option_b": "Spawn with default everything but somehow hit every shot",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 33,
+    "option_a": "Have a minimap that only shows your mistakes",
+    "option_b": "Have a kill feed that says \"bro really?\" after every death",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 34,
+    "option_a": "Be immortal in-game but your inventory is always full of useless junk",
+    "option_b": "Have unlimited inventory space but you die in one hit to air",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 35,
+    "option_a": "Only get healing items when you are already at full health",
+    "option_b": "Only get ammo when the enemy is literally one shot",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 36,
+    "option_a": "Have every boss fight start with them emoting on you",
+    "option_b": "Have every NPC give you the side eye like they know you missed the tutorial",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 37,
+    "option_a": "Rage quit every game with perfect dramatic timing",
+    "option_b": "Stay calm every game but your character auto-says \"we are so back\" after every mistake",
+    "votes_a": 1,
+    "votes_b": 0
+  },
+  {
+    "id": 38,
+    "option_a": "Only unlock achievements that nobody understands",
+    "option_b": "Only unlock achievements that make your friends roast you",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 39,
+    "option_a": "Have your gamer tag appear in all caps when you win and lowercase when you lose",
+    "option_b": "Have the game text you \"skill issue\" after every defeat",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 40,
+    "option_a": "Queue into the same toxic player forever, but you always beat them",
+    "option_b": "Never see toxic players again, but every teammate is a potato",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 41,
+    "option_a": "Get a free legendary drop every match with a 50% chance of it being a prank item",
+    "option_b": "Get no loot, but the announcer gaslights you into thinking you're rich",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 42,
+    "option_a": "Have your character T-pose whenever you are stressed",
+    "option_b": "Have your character moonwalk away from every bad decision you make",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 43,
+    "option_a": "Only get invited to lobbies that are already doomed",
+    "option_b": "Only get invited to lobbies where one friend is definitely AFK",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 44,
+    "option_a": "Have a perfect K/D ratio but no one believes you",
+    "option_b": "Have a terrible K/D ratio but everyone treats you like a legend",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 45,
+    "option_a": "Only be able to beat a game after accidentally clicking every wrong button first",
+    "option_b": "Only be able to beat a game if the final boss is distracted by a snack",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 46,
+    "option_a": "Eat cereal with pickle juice instead of milk",
+    "option_b": "Eat pizza with frosting instead of sauce",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 47,
+    "option_a": "Drink a smoothie that somehow tastes like old gym socks",
+    "option_b": "Eat soup that wiggles every time you stir it",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 48,
+    "option_a": "Have to put ketchup on every dessert",
+    "option_b": "Have to put whipped cream on every savory meal",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 49,
+    "option_a": "Eat a sandwich with warm mayonnaise",
+    "option_b": "Eat a burger with cold spaghetti on top",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 50,
+    "option_a": "Only be able to snack on moldy-looking grapes that are somehow fine",
+    "option_b": "Only be able to eat chips that taste like the inside of a backpack",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 51,
+    "option_a": "Have every drink be slightly fizzy and suspiciously warm",
+    "option_b": "Have every meal be served in a bowl that smells like onions",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 52,
+    "option_a": "Eat a taco filled with fruit salad and regret",
+    "option_b": "Eat a donut filled with mashed potatoes",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 53,
+    "option_a": "Have to chew gum that tastes like expired barbecue sauce",
+    "option_b": "Have to eat ice cream that crunches like gravel",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 54,
+    "option_a": "Only eat food that was left in a fridge with questionable noises",
+    "option_b": "Only eat food that has one mysterious bite already taken out of it",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 55,
+    "option_a": "Have to drink your coffee with a whole raw onion floating in it",
+    "option_b": "Have to eat your ramen with marshmallows mixed in",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 56,
+    "option_a": "Only be able to order food from a menu written by a raccoon",
+    "option_b": "Only be able to cook using ingredients that sound fake",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 57,
+    "option_a": "Eat a salad that is 90% wet croutons and 10% mystery",
+    "option_b": "Eat a burrito that makes a sloshing sound when you pick it up",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 58,
+    "option_a": "Have to season every meal with way too much cinnamon",
+    "option_b": "Have to season every meal with way too much salt and one tiny gummy bear",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 59,
+    "option_a": "Only be able to eat meals that are still technically moving",
+    "option_b": "Only be able to eat meals that have the texture of wet cardboard",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 60,
+    "option_a": "Have every apple taste like a dentist office smells",
+    "option_b": "Have every banana taste like a pool floatie",
+    "votes_a": 1,
+    "votes_b": 0
+  },
+  {
+    "id": 61,
+    "option_a": "Eat fries dipped in pudding",
+    "option_b": "Eat pancakes dipped in pickle brine",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 62,
+    "option_a": "Have to use gravy as your drink of choice",
+    "option_b": "Have to use juice as your sauce for everything",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 63,
+    "option_a": "Only be able to eat mystery casserole at every meal",
+    "option_b": "Only be able to eat a sandwich where every ingredient is a little off",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 64,
+    "option_a": "Have a tiny piece of onion in every bite forever",
+    "option_b": "Have a tiny piece of toothpaste in every bite forever",
+    "votes_a": 0,
+    "votes_b": 0
+  },
+  {
+    "id": 65,
+    "option_a": "Only eat sushi from a gas station with no questions asked",
+    "option_b": "Only eat a gourmet meal that was clearly made by someone who hates flavor",
+    "votes_a": 0,
+    "votes_b": 0
+  }
+]

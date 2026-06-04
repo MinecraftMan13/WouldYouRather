@@ -1,0 +1,1 @@
+tailscale funnel 80

@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Challenge Lobby — Would You Rather</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Karla:wght@400;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:          #0f0f13;
+      --surface:     #1a1a24;
+      --surface2:    #222230;
+      --border:      #2e2e42;
+      --text:        #e8e8f0;
+      --muted:       #7070a0;
+      --accent-a:    #f97316;
+      --accent-b:    #3b82f6;
+      --success:     #22c55e;
+      --danger:      #ef4444;
+      --radius:      16px;
+      --transition:  0.25s ease;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Karla', sans-serif;
+      display: flex;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 720px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    header {
+      text-align: center;
+    }
+    header h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(2rem, 5vw, 3rem);
+      background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    header p {
+      margin-top: 0.5rem;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.8rem;
+      animation: fadeUp 0.35s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .section-title {
+      font-size: 1.05rem;
+      margin-bottom: 1rem;
+      font-weight: 700;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.8rem 1rem;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      font-family: 'Karla', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      transition: transform var(--transition), opacity var(--transition);
+      text-decoration: none;
+    }
+    .btn:hover { transform: translateY(-1px); opacity: 0.95; }
+    .btn-primary { background: var(--accent-b); color: white; }
+    .btn-success { background: var(--success); color: white; }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+
+    .error-msg {
+      background: rgba(239,68,68,0.12);
+      border: 1px solid #fca5a5;
+      border-radius: 12px;
+      color: #fca5a5;
+      padding: 0.9rem 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      margin-bottom: 1rem;
+    }
+    .field label {
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .field input {
+      padding: 0.9rem 1rem;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      font-size: 1rem;
+    }
+
+    .invite-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-top: 1rem;
+      display: grid;
+      gap: 0.75rem;
+    }
+    .invite-label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 700;
+    }
+    .invite-url {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.9rem 1rem;
+      font-size: 0.95rem;
+      color: var(--text);
+      word-break: break-all;
+    }
+
+    .player-grid {
+      display: grid;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+    .player-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+    .player-name { font-weight: 700; }
+    .status-pill {
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+    .status-waiting { background: rgba(112,112,160,0.15); color: var(--muted); }
+    .status-picked { background: rgba(34,197,94,0.15); color: var(--success); }
+
+    .question-card {
+      display: grid;
+      gap: 1rem;
+    }
+    .option-btn {
+      width: 100%;
+      padding: 1.1rem 1.2rem;
+      border-radius: 14px;
+      border: 2px solid transparent;
+      background: transparent;
+      cursor: pointer;
+      font-family: 'Karla', sans-serif;
+      font-size: 1rem;
+      line-height: 1.4;
+      color: var(--text);
+      text-align: left;
+      transition: background var(--transition), transform var(--transition), border-color var(--transition);
+    }
+    .option-btn.a { border-color: var(--accent-a); background: rgba(249,115,22,0.14); }
+    .option-btn.b { border-color: var(--accent-b); background: rgba(59,130,246,0.14); }
+    .option-btn:hover { transform: translateX(4px); }
+    .option-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+    .results-panel {
+      display: none;
+      margin-top: 1.4rem;
+      gap: 0.9rem;
+    }
+    .result-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 1rem;
+      align-items: center;
+      padding: 0.95rem 1rem;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    .result-row span { font-size: 0.95rem; }
+    .result-choice {
+      min-width: 90px;
+      text-align: right;
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .helper-text {
+      color: var(--muted);
+      font-size: 0.92rem;
+      margin-top: 0.8rem;
+    }
+
+    .actions { margin-top: 1rem; display: flex; gap: 0.75rem; flex-wrap: wrap; }
+    .actions .btn { flex: 1; }
+
+    footer { color: var(--muted); text-align: center; margin-top: 1rem; font-size: 0.82rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Friend Challenge</h1>
+      <p>Create a shared lobby, invite a friend, and vote on the same questions together.</p>
+    </header>
+
+    {% if join_only %}
+    <div class="card">
+      <div class="section-title">Join Lobby {{ lobby_id }}</div>
+      {% if error %}
+        <div class="error-msg">{{ error }}</div>
+      {% endif %}
+      <form method="GET" action="/challenge/{{ lobby_id }}">
+        <div class="field">
+          <label for="nickname">Nickname</label>
+          <input id="nickname" name="nickname" type="text" maxlength="16" placeholder="Enter your nickname" required />
+        </div>
+        <button type="submit" class="btn btn-success">Join lobby</button>
+      </form>
+
+      <div class="invite-box">
+        <div class="invite-label">Share invite link</div>
+        <div class="invite-url">{{ request.url_root[:-1] }}/challenge/{{ lobby_id }}</div>
+      </div>
+
+      <div class="section-title" style="margin-top:1.5rem;">Waiting players</div>
+      <div class="player-grid">
+        {% if players %}
+          {% for name, info in players.items() %}
+          <div class="player-card">
+            <div class="player-name">{{ name }}</div>
+            <div class="status-pill status-waiting">Waiting</div>
+          </div>
+          {% endfor %}
+        {% else %}
+          <div class="player-card">
+            <div class="player-name">No one has joined yet</div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+    {% else %}
+    <div class="card">
+      <div class="section-title">Lobby {{ lobby.id }}</div>
+      <div class="invite-box">
+        <div class="invite-label">Invite your friend</div>
+        <div class="invite-url" id="invite-url"></div>
+        <div class="actions">
+          <button type="button" id="copy-invite-btn" class="btn btn-primary" onclick="copyInvite()">Copy invite link</button>
+          <a class="btn btn-ghost" href="{{ url_for('leave_lobby', lobby_id=lobby.id, nickname=nickname) }}">Back to solo mode</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Players</div>
+      <div class="player-grid" id="players-list">
+        {% for name, info in players.items() %}
+        <div class="player-card">
+          <div class="player-name">{{ name }}</div>
+          <div class="status-pill status-waiting" id="status-{{ loop.index }}">Waiting</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if finished %}
+    <div class="card">
+      <div class="section-title">Challenge complete</div>
+      <p class="helper-text">You've reached the end of the lobby question list.</p>
+      <div class="actions">
+        <a class="btn btn-primary" href="/">Play more solo</a>
+        <button type="button" class="btn btn-success" onclick="location.reload()">Refresh lobby</button>
+      </div>
+    </div>
+    {% else %}
+    <div class="card">
+      <div class="section-title">Question</div>
+      <div class="question-card" id="question-card">
+        <button class="option-btn a" data-choice="a" onclick="submitChallengeVote('a')">{{ question.option_a }}</button>
+        <button class="option-btn b" data-choice="b" onclick="submitChallengeVote('b')">{{ question.option_b }}</button>
+      </div>
+
+      <div class="results-panel" id="results-panel">
+        <div class="result-row">
+          <span id="result-player-1"></span>
+          <span class="result-choice" id="result-choice-1"></span>
+        </div>
+        <div class="result-row">
+          <span id="result-player-2"></span>
+          <span class="result-choice" id="result-choice-2"></span>
+        </div>
+      </div>
+
+      <p class="helper-text" id="challenge-message">Vote to see your friend's choice.</p>
+      <div class="actions">
+        <button type="button" class="btn btn-success" id="next-challenge-btn" style="display:none;" onclick="advanceChallenge()">Next question</button>
+      </div>
+    </div>
+    {% endif %}
+    {% endif %}
+
+    <footer>Made with Flask &amp; shared choices</footer>
+  </div>
+
+  <script>
+    {% if not join_only and not finished %}
+    const LOBBY_ID = {{ lobby.id | tojson }};
+    const MY_NICKNAME = {{ nickname | tojson }};
+    const QUESTION_ID = {{ question.id | tojson }};
+    const OPTION_A_TEXT = {{ question.option_a | tojson }};
+    const OPTION_B_TEXT = {{ question.option_b | tojson }};
+    const INVITE_URL = window.location.origin + "/challenge/" + LOBBY_ID;
+
+    document.getElementById('invite-url').textContent = INVITE_URL;
+
+    const playersOrder = Object.keys({{ players | tojson }});
+    function copyInvite() {
+      navigator.clipboard.writeText(INVITE_URL).then(() => {
+        const button = document.getElementById('copy-invite-btn');
+        if (button) {
+          button.textContent = '✓ Copied';
+          setTimeout(() => button.textContent = 'Copy invite link', 1500);
+        }
+      }).catch(() => {
+        console.error('Unable to copy invite link');
+      });
+    }
+
+    function setPlayerStatuses(players) {
+      const playerKeys = Object.keys(players);
+      const list = document.getElementById('players-list');
+      list.innerHTML = '';
+      playerKeys.forEach(name => {
+        const card = document.createElement('div');
+        card.className = 'player-card';
+        const label = document.createElement('div');
+        label.className = 'player-name';
+        label.textContent = name + (name === MY_NICKNAME ? ' (you)' : '');
+        const status = document.createElement('div');
+        const choice = players[name].choice;
+        status.className = 'status-pill ' + (choice ? 'status-picked' : 'status-waiting');
+        status.textContent = choice ? `Picked ${choice.toUpperCase()}` : 'Waiting';
+        card.appendChild(label);
+        card.appendChild(status);
+        list.appendChild(card);
+      });
+    }
+
+    function setResults(players) {
+      const playerNames = Object.keys(players);
+      const rows = [
+        { target: 'result-player-1', choice: 'result-choice-1', index: 0 },
+        { target: 'result-player-2', choice: 'result-choice-2', index: 1 }
+      ];
+      rows.forEach(row => {
+        const playerName = playerNames[row.index] || '';
+        const choice = players[playerName]?.choice;
+        document.getElementById(row.target).textContent = playerName || 'Waiting for other player';
+        document.getElementById(row.choice).textContent = choice ? (choice === 'a' ? OPTION_A_TEXT : OPTION_B_TEXT) : 'No vote yet';
+      });
+    }
+
+    function setMessage(text) {
+      document.getElementById('challenge-message').textContent = text;
+    }
+
+    function updateUI(data) {
+      setPlayerStatuses(data.players);
+      if (!data.players[MY_NICKNAME] || !data.players[MY_NICKNAME].choice) {
+        setMessage('You have not voted yet. Pick an option above.');
+        setResults(data.players);
+        enableOptions(true);
+        document.getElementById('next-challenge-btn').style.display = 'none';
+        return;
+      }
+
+      if (!data.both_voted) {
+        setMessage('Waiting for your friend to vote...');
+        setResults(data.players);
+        enableOptions(false);
+        document.getElementById('next-challenge-btn').style.display = 'none';
+        return;
+      }
+
+      setMessage('Both players have voted. Review the picks and continue.');
+      setResults(data.players);
+      enableOptions(false);
+      document.getElementById('results-panel').style.display = 'grid';
+      document.getElementById('next-challenge-btn').style.display = 'inline-flex';
+    }
+
+    function enableOptions(enabled) {
+      document.querySelectorAll('.option-btn').forEach(button => {
+        button.disabled = !enabled;
+      });
+    }
+
+    async function refreshStatus() {
+      try {
+        const response = await fetch(`/challenge/${LOBBY_ID}/status?nickname=${encodeURIComponent(MY_NICKNAME)}`);
+        const data = await response.json();
+        if (data.finished) {
+          window.location.reload();
+          return;
+        }
+        if (data.question && data.question.id !== QUESTION_ID) {
+          window.location.reload();
+          return;
+        }
+        updateUI(data);
+      } catch (err) {
+        console.error('Status refresh failed:', err);
+      }
+    }
+
+    async function submitChallengeVote(choice) {
+      enableOptions(false);
+      try {
+        const response = await fetch(`/challenge/${LOBBY_ID}/vote`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nickname: MY_NICKNAME, choice })
+        });
+        const data = await response.json();
+        if (data.error) {
+          setMessage(data.error);
+          return;
+        }
+        updateUI(data);
+      } catch (err) {
+        console.error('Challenge vote failed:', err);
+      }
+    }
+
+    async function advanceChallenge() {
+      try {
+        const response = await fetch(`/challenge/${LOBBY_ID}/next`, { method: 'POST' });
+        const data = await response.json();
+        if (data.finished) {
+          window.location.reload();
+          return;
+        }
+        window.location.reload();
+      } catch (err) {
+        console.error('Advance failed:', err);
+      }
+    }
+
+    setPlayerStatuses({{ players | tojson }});
+    refreshStatus();
+    setInterval(refreshStatus, 3000);
+    {% else %}
+    function copyInvite() {
+      navigator.clipboard.writeText(window.location.href).catch(() => {});
+    }
+    {% endif %}
+  </script>
+</body>
+</html>

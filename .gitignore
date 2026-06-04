@@ -1,0 +1,15 @@
+# Python virtual environment
+.venv/
+venv/
+
+# Secrets
+.env
+
+# App data files (contain real user votes and IPs)
+ip_log.json
+user_votes.json
+__pycache__/
+*.pyc
+
+# VS Code settings (optional — some people commit these, personal preference)
+.vscode/

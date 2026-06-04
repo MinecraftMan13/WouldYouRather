@@ -1,0 +1,2 @@
+tailscale funnel status
+pause

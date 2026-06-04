@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Would You Rather?</title>
+
+  <!-- Open Graph tags — controls how the link looks when shared on
+       Twitter, Discord, iMessage, etc. Flask fills in the question text. -->
+  <meta property="og:title"       content="Would You Rather?"/>
+  <meta property="og:description" content="{{ question.option_a }} OR {{ question.option_b }}"/>
+  <meta property="og:type"        content="website"/>
+
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Karla:wght@400;600&display=swap" rel="stylesheet"/>
+
+  <style>
+    /* -----------------------------------------------
+       CSS VARIABLES
+    ----------------------------------------------- */
+    :root {
+      --bg:           #0f0f13;
+      --surface:      #1a1a24;
+      --surface2:     #222230;
+      --border:       #2e2e42;
+      --text:         #e8e8f0;
+      --muted:        #7070a0;
+      --accent-a:     #f97316;
+      --accent-b:     #3b82f6;
+      --accent-a-dim: rgba(249,115,22,0.12);
+      --accent-b-dim: rgba(59,130,246,0.12);
+      --success:      #22c55e;
+      --radius:       16px;
+      --transition:   0.25s ease;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(circle, #2a2a3a 1px, transparent 1px);
+      background-size: 28px 28px;
+      color: var(--text);
+      font-family: 'Karla', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 680px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    /* -----------------------------------------------
+       TOAST NOTIFICATION (live vote counter)
+       Slides in from the top when someone votes.
+    ----------------------------------------------- */
+    #toast {
+      position: fixed;
+      top: 1.2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(-120px); /* starts off-screen */
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.55rem 1.2rem;
+      font-size: 0.85rem;
+      color: var(--text);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      z-index: 999;
+      /* slide transition */
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      pointer-events: none; /* don't block clicks */
+    }
+
+    /* When JS adds the .show class, it slides down into view */
+    #toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .toast-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      /* Pulsing animation to show it's live */
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1;   transform: scale(1); }
+      50%       { opacity: 0.5; transform: scale(0.85); }
+    }
+
+    /* -----------------------------------------------
+       HEADER
+    ----------------------------------------------- */
+    header { text-align: center; }
+
+    header h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(2rem, 6vw, 3rem);
+      font-weight: 800;
+      letter-spacing: -1px;
+      background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    header p { color: var(--muted); margin-top: 0.4rem; font-size: 0.95rem; }
+
+    /* Submit a question link in header */
+    .submit-link {
+      display: inline-block;
+      margin-top: 0.6rem;
+      font-size: 0.82rem;
+      color: var(--muted);
+      text-decoration: none;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.25rem 0.8rem;
+      transition: color var(--transition), border-color var(--transition);
+    }
+    .submit-link:hover { color: var(--text); border-color: var(--muted); }
+
+    .multiplayer-cta {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.85rem;
+      margin-top: 1.5rem;
+    }
+
+    .challenge-form {
+      display: none;
+      width: 100%;
+      gap: 0.75rem;
+    }
+
+    .challenge-form input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text);
+      font-size: 0.95rem;
+      padding: 0.9rem 1rem;
+    }
+
+    .challenge-form button {
+      width: 100%;
+    }
+
+    /* -----------------------------------------------
+       CARD
+    ----------------------------------------------- */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      width: 100%;
+      animation: fadeUp 0.4s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* -----------------------------------------------
+       QUESTION SECTION
+    ----------------------------------------------- */
+    #question-section {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .option-btn {
+      width: 100%;
+      padding: 1.2rem 1.5rem;
+      border-radius: 12px;
+      border: 2px solid transparent;
+      background: transparent;
+      color: var(--text);
+      font-family: 'Karla', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: left;
+      transition: background var(--transition), border-color var(--transition), transform var(--transition);
+      line-height: 1.4;
+    }
+
+    .option-btn.a { border-color: var(--accent-a); background: var(--accent-a-dim); }
+    .option-btn.a:hover { background: rgba(249,115,22,0.22); transform: translateX(4px); }
+    .option-btn.b { border-color: var(--accent-b); background: var(--accent-b-dim); }
+    .option-btn.b:hover { background: rgba(59,130,246,0.22); transform: translateX(4px); }
+
+    .divider {
+      text-align: center;
+      color: var(--muted);
+      font-family: 'Syne', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 3px;
+      position: relative;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 38%;
+      height: 1px;
+      background: var(--border);
+    }
+    .divider::before { left: 0; }
+    .divider::after  { right: 0; }
+
+    /* -----------------------------------------------
+       RESULTS SECTION
+    ----------------------------------------------- */
+    #results-section {
+      display: none;
+      flex-direction: column;
+      gap: 1.2rem;
+      animation: fadeUp 0.35s ease both;
+    }
+
+    .result-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 0.3rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .result-text { font-size: 1rem; font-weight: 600; color: var(--text); margin-bottom: 0.6rem; }
+
+    .bar-track {
+      width: 100%;
+      height: 12px;
+      background: var(--border);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 999px;
+      width: 0%;
+      transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .bar-fill.a { background: var(--accent-a); }
+    .bar-fill.b { background: var(--accent-b); }
+
+    .bar-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.3rem;
+    }
+
+    .bar-votes   { font-size: 0.82rem; color: var(--muted); }
+    .bar-percent { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 700; }
+    .bar-percent.a { color: var(--accent-a); }
+    .bar-percent.b { color: var(--accent-b); }
+
+    /* -----------------------------------------------
+       SHARE BUTTONS
+       Shown after voting, below the results.
+    ----------------------------------------------- */
+    #share-section {
+      display: none; /* shown by JS after voting */
+      flex-direction: column;
+      gap: 0.6rem;
+      margin-top: 0.5rem;
+      padding-top: 1.2rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .share-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .share-buttons {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .share-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      font-family: 'Karla', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background var(--transition), border-color var(--transition);
+    }
+
+    .share-btn:hover { background: var(--border); }
+
+    /* Twitter/X button gets a subtle brand tint */
+    .share-btn.twitter:hover { border-color: #1d9bf0; color: #1d9bf0; }
+
+    /* Copy link button feedback */
+    .share-btn.copied { border-color: var(--success); color: var(--success); }
+
+    /* -----------------------------------------------
+       NEXT BUTTON
+    ----------------------------------------------- */
+    #next-btn {
+      display: none;
+      width: 100%;
+      padding: 0.9rem;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
+      color: #fff;
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      transition: opacity var(--transition), transform var(--transition);
+    }
+
+    #next-btn:hover { opacity: 0.88; transform: translateY(-2px); }
+
+    /* -----------------------------------------------
+       FOOTER
+    ----------------------------------------------- */
+    footer { color: var(--muted); font-size: 0.8rem; }
+  </style>
+</head>
+
+<body>
+
+  <!-- -----------------------------------------------
+       TOAST — live vote notification
+       JS shows this whenever /stream sends an event.
+  ----------------------------------------------- -->
+  <div id="toast">
+    <span class="toast-dot"></span>
+    <span id="toast-text">Someone just voted!</span>
+  </div>
+
+  <div class="container">
+
+    <!-- HEADER -->
+    <header>
+      <h1>Would You Rather?</h1>
+      <p>Pick one. There are no good options.</p>
+      <a href="/submit" class="submit-link">✏️ Submit a question</a>
+      <a href="javascript:void(0)" class="submit-link" onclick="toggleChallengeForm()">
+        🤝 Friend Challenge
+      </a>
+      <a href="javascript:void(0)" class="submit-link" onclick="toggleHistory()">
+        📜 My History
+      </a>
+      <form id="challenge-form" class="challenge-form" method="POST" action="/challenge/create">
+        <input type="text" name="nickname" placeholder="Your nickname" maxlength="16" required />
+        <button type="submit" class="btn btn-success">Create invite link</button>
+      </form>
+
+      <div id="history-panel" class="card" style="display:none; margin-top:1rem;">
+        <h3>Your Vote History</h3>
+        <p class="pending-subtitle" style="margin-bottom:0.6rem">See the questions you've voted on and change your pick.</p>
+        <div id="history-list">
+          <p style="color:var(--muted)">No votes yet.</p>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN CARD -->
+    <div class="card">
+
+      <!-- QUESTION SECTION -->
+      <div id="question-section">
+        <button class="option-btn a" data-choice="a" onclick="vote(this)">
+          {{ question.option_a }}
+        </button>
+        <div class="divider">OR</div>
+        <button class="option-btn b" data-choice="b" onclick="vote(this)">
+          {{ question.option_b }}
+        </button>
+      </div>
+
+      <!-- RESULTS SECTION -->
+      <div id="results-section">
+
+        <div>
+          <div class="result-label">Option A</div>
+          <div class="result-text" id="result-text-a"></div>
+          <div class="bar-track">
+            <div class="bar-fill a" id="bar-a"></div>
+          </div>
+          <div class="bar-meta">
+            <span class="bar-votes"   id="votes-a"></span>
+            <span class="bar-percent a" id="percent-a"></span>
+          </div>
+        </div>
+
+        <div>
+          <div class="result-label">Option B</div>
+          <div class="result-text" id="result-text-b"></div>
+          <div class="bar-track">
+            <div class="bar-fill b" id="bar-b"></div>
+          </div>
+          <div class="bar-meta">
+            <span class="bar-votes"   id="votes-b"></span>
+            <span class="bar-percent b" id="percent-b"></span>
+          </div>
+        </div>
+
+        <!-- SHARE SECTION — inside results card, below bars -->
+        <div id="share-section">
+          <div class="share-label">Share this question</div>
+          <div class="share-buttons">
+
+            <!--
+              Twitter share button.
+              onclick builds the tweet URL dynamically in JS
+              using the current question text and result.
+            -->
+            <button class="share-btn twitter" onclick="shareTwitter()">
+              𝕏 Post result
+            </button>
+
+            <!-- Copy direct link to this specific question -->
+            <button class="share-btn" id="copy-btn" onclick="copyLink()">
+              🔗 Copy link
+            </button>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- NEXT QUESTION BUTTON -->
+    <button id="next-btn" onclick="location.href='/'">
+      Next Question →
+    </button>
+
+    <footer>Made with Flask &amp; bad choices</footer>
+
+
+  </div>
+
+  <!-- -----------------------------------------------
+       JAVASCRIPT
+  ----------------------------------------------- -->
+  <script>
+    // Jinja2 fills these in when Flask renders the page
+    const QUESTION_ID   = {{ question.id | tojson }};
+    const OPTION_A_TEXT = {{ question.option_a | tojson }};
+    const OPTION_B_TEXT = {{ question.option_b | tojson }};
+
+    // The shareable URL for this specific question
+    // e.g. https://yoursite.com/question/4
+    const QUESTION_URL = window.location.origin + "/question/" + QUESTION_ID;
+
+    // Stores the user's chosen option text — used in the tweet
+    let myChoiceText = "";
+    let myPercentage = "";
+
+
+    /* -----------------------------------------------
+       VOTE
+    ----------------------------------------------- */
+    async function vote(button) {
+      const choice = button.dataset.choice;
+
+      // Disable buttons immediately to prevent double-voting
+      document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
+
+      // Remember what the user picked for the share text
+      myChoiceText = choice === "a" ? OPTION_A_TEXT : OPTION_B_TEXT;
+
+      try {
+        const response = await fetch('/vote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question_id: QUESTION_ID, choice })
+        });
+
+        const data = await response.json();
+
+        if (data.already_voted) {
+          document.getElementById('question-section').innerHTML =
+            '<p style="text-align:center; color:var(--muted); padding:1rem;">You\'ve already voted on this one!</p>';
+          document.getElementById('next-btn').style.display = 'block';
+          return;
+        }
+
+        // Store the percentage for the tweet text
+        myPercentage = choice === "a" ? data.percent_a : data.percent_b;
+
+        // Fill in result text and numbers
+        document.getElementById('result-text-a').textContent = OPTION_A_TEXT;
+        document.getElementById('result-text-b').textContent = OPTION_B_TEXT;
+        document.getElementById('votes-a').textContent   = `${data.votes_a} votes`;
+        document.getElementById('votes-b').textContent   = `${data.votes_b} votes`;
+        document.getElementById('percent-a').textContent = `${data.percent_a}%`;
+        document.getElementById('percent-b').textContent = `${data.percent_b}%`;
+
+        // Swap question → results
+        document.getElementById('question-section').style.display  = 'none';
+        document.getElementById('results-section').style.display   = 'flex';
+        document.getElementById('share-section').style.display     = 'flex';
+        document.getElementById('next-btn').style.display          = 'block';
+
+        // Animate bars after a tiny delay so the CSS transition plays
+        setTimeout(() => {
+          document.getElementById('bar-a').style.width = `${data.percent_a}%`;
+          document.getElementById('bar-b').style.width = `${data.percent_b}%`;
+        }, 50);
+
+        // Refresh history panel if open
+        try { if (document.getElementById('history-panel') && document.getElementById('history-panel').style.display !== 'none') fetchHistory(); } catch(e){}
+
+      } catch (error) {
+        console.error('Vote failed:', error);
+      }
+    }
+
+
+    /* -----------------------------------------------
+       SHARE — TWITTER
+       Builds a tweet with the result and a link.
+    ----------------------------------------------- */
+    function shareTwitter() {
+      const tweet =
+        `Would you rather... "${myChoiceText}"?\n` +
+        `${myPercentage}% of people agree with me!\n\n` +
+        `Play here: ${QUESTION_URL}`;
+
+      // Twitter's web intent URL — opens a pre-filled tweet compose window
+      const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweet)}`;
+      window.open(url, "_blank", "width=550,height=420");
+    }
+
+
+    /* -----------------------------------------------
+       SHARE — COPY LINK
+       Copies the direct question URL to the clipboard.
+    ----------------------------------------------- */
+    async function copyLink() {
+      try {
+        await navigator.clipboard.writeText(QUESTION_URL);
+
+        // Give visual feedback on the button
+        const btn = document.getElementById('copy-btn');
+        btn.textContent = '✓ Copied!';
+        btn.classList.add('copied');
+
+        // Reset after 2 seconds
+        setTimeout(() => {
+          btn.textContent = '🔗 Copy link';
+          btn.classList.remove('copied');
+        }, 2000);
+
+      } catch (err) {
+        console.error('Copy failed:', err);
+      }
+    }
+
+    /* -----------------------------------------------
+       MY HISTORY — fetch and render per-IP vote history
+    ----------------------------------------------- */
+    function toggleHistory(){
+      const panel = document.getElementById('history-panel');
+      if(!panel) return;
+      if(panel.style.display === 'none'){
+        panel.style.display = 'block';
+        fetchHistory();
+      } else {
+        panel.style.display = 'none';
+      }
+    }
+
+    async function fetchHistory(){
+      try{
+        const res = await fetch('/my-history');
+        if(!res.ok) throw new Error('Failed');
+        const data = await res.json();
+        renderHistory(data);
+      }catch(err){
+        const el = document.getElementById('history-list');
+        if(el) el.innerHTML = '<p style="color:var(--muted)">Unable to load history.</p>';
+      }
+    }
+
+    function renderHistory(items){
+      const container = document.getElementById('history-list');
+      if(!container) return;
+      if(!items || items.length === 0){
+        container.innerHTML = '<p style="color:var(--muted)">No votes yet.</p>';
+        return;
+      }
+      let html = '';
+      items.forEach(it => {
+        const qid = it.question_id;
+        const you = it.choice;
+        html += `
+          <div style="border-bottom:1px solid rgba(255,255,255,0.04); padding:0.6rem 0;">
+            <div style="font-weight:700">${it.option_a} <span style="color:var(--muted);">vs</span> ${it.option_b}</div>
+            <div style="margin-top:0.35rem; display:flex; gap:0.5rem; align-items:center;">
+              <div style="color:var(--muted); font-size:0.9rem;">Your pick: <strong style="color:var(--text); margin-left:0.3rem">${you ? you.toUpperCase() : 'None'}</strong></div>
+              <div style="margin-left:auto">
+                <button class="btn btn-ghost" ${you==='a'? 'disabled':''} onclick="changeVote(${qid}, 'a')">Pick A</button>
+                <button class="btn btn-ghost" ${you==='b'? 'disabled':''} onclick="changeVote(${qid}, 'b')">Pick B</button>
+              </div>
+            </div>
+          </div>`;
+      });
+      container.innerHTML = html;
+    }
+
+    async function changeVote(question_id, choice){
+      try{
+        const res = await fetch('/change-vote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question_id, choice })
+        });
+        const data = await res.json();
+        if(res.ok && data.ok){
+          // refresh history and current bars if relevant
+          fetchHistory();
+          if(typeof QUESTION_ID !== 'undefined' && QUESTION_ID === question_id){
+            document.getElementById('votes-a').textContent = `${data.votes_a} votes`;
+            document.getElementById('votes-b').textContent = `${data.votes_b} votes`;
+            document.getElementById('percent-a').textContent = `${data.percent_a}%`;
+            document.getElementById('percent-b').textContent = `${data.percent_b}%`;
+            document.getElementById('bar-a').style.width = `${data.percent_a}%`;
+            document.getElementById('bar-b').style.width = `${data.percent_b}%`;
+          }
+        } else {
+          alert(data.error || 'Unable to change vote');
+        }
+      }catch(e){
+        alert('Change failed');
+      }
+    }
+
+    function toggleChallengeForm() {
+      const form = document.getElementById('challenge-form');
+      form.style.display = form.style.display === 'grid' ? 'none' : 'grid';
+    }
+
+
+    /* -----------------------------------------------
+       SSE — LIVE VOTE TOAST
+       Opens a persistent connection to /stream.
+       When Flask pushes a vote event, we show the toast.
+    ----------------------------------------------- */
+    const eventSource = new EventSource("/stream");
+
+    // Hide the toast after showing it
+    let toastTimer = null;
+
+    eventSource.onmessage = function(event) {
+      // event.data is the option text of whoever just voted
+      const text = event.data;
+
+      // Update and show the toast
+      document.getElementById('toast-text').textContent =
+        `Someone just voted: "${text}"`;
+
+      const toast = document.getElementById('toast');
+      toast.classList.add('show');
+
+      // Clear any existing hide timer and start a fresh one
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3500);
+    };
+
+    // If the SSE connection drops, fail silently
+    eventSource.onerror = function() {
+      eventSource.close();
+    };
+  </script>
+
+</body>
+</html>

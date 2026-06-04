@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin — Would You Rather</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Karla:wght@400;600&display=swap" rel="stylesheet"/>
+
+  <style>
+    /* -----------------------------------------------
+       VARIABLES — same dark palette as index.html
+    ----------------------------------------------- */
+    :root {
+      --bg:          #0f0f13;
+      --surface:     #1a1a24;
+      --surface2:    #222230;
+      --border:      #2e2e42;
+      --text:        #e8e8f0;
+      --muted:       #7070a0;
+      --accent-a:    #f97316;
+      --accent-b:    #3b82f6;
+      --danger:      #ef4444;
+      --success:     #22c55e;
+      --radius:      12px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(circle, #2a2a3a 1px, transparent 1px);
+      background-size: 28px 28px;
+      color: var(--text);
+      font-family: 'Karla', sans-serif;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    /* -----------------------------------------------
+       SHARED ELEMENTS
+    ----------------------------------------------- */
+    h1, h2, h3 {
+      font-family: 'Syne', sans-serif;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      animation: fadeUp 0.35s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="number"] {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'Karla', sans-serif;
+      font-size: 0.95rem;
+      padding: 0.6rem 0.9rem;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: var(--accent-b);
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 0.35rem;
+    }
+
+    .field { margin-bottom: 1rem; }
+
+    /* Buttons */
+    .btn {
+      display: inline-block;
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      border: none;
+      font-family: 'Karla', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.2s;
+      text-decoration: none;
+    }
+    .btn:hover { opacity: 0.85; transform: translateY(-1px); }
+
+    .btn-primary  { background: var(--accent-b);  color: #fff; }
+    .btn-success  { background: var(--success);   color: #fff; }
+    .btn-danger   { background: var(--danger);    color: #fff; }
+    .btn-ghost    { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+
+    .error-msg {
+      background: rgba(239,68,68,0.12);
+      border: 1px solid var(--danger);
+      border-radius: 8px;
+      color: #fca5a5;
+      font-size: 0.9rem;
+      padding: 0.7rem 1rem;
+      margin-bottom: 1.2rem;
+    }
+
+
+    /* -----------------------------------------------
+       LOGIN PAGE
+    ----------------------------------------------- */
+    .login-wrap {
+      max-width: 380px;
+      margin: 8vh auto 0;
+    }
+
+    .login-wrap h1 {
+      font-size: 1.8rem;
+      margin-bottom: 0.3rem;
+    }
+
+    .login-wrap p {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-bottom: 1.8rem;
+    }
+
+    .login-wrap .btn-primary {
+      width: 100%;
+      padding: 0.75rem;
+      font-size: 1rem;
+      margin-top: 0.5rem;
+    }
+
+
+    /* -----------------------------------------------
+       DASHBOARD
+    ----------------------------------------------- */
+    .dashboard-wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    /* Top bar */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .topbar h1 {
+      font-size: 1.6rem;
+      background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .dashboard-tabs {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .tab-btn {
+      padding: 0.65rem 1rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .tab-btn.active {
+      border-color: transparent;
+      background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+      color: #fff;
+    }
+
+    /* Add question form */
+    .add-card { margin-bottom: 2rem; }
+
+    .add-card h2 {
+      font-size: 1.1rem;
+      margin-bottom: 1.2rem;
+      color: var(--text);
+    }
+
+    .add-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 0.8rem;
+      align-items: end;
+    }
+
+    @media (max-width: 640px) {
+      .add-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Questions table */
+    .table-card h2 {
+      font-size: 1.1rem;
+      margin-bottom: 1.2rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    thead th {
+      text-align: left;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 0 0.75rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* Each question gets its own subtle card-like row */
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+    }
+
+    tbody tr:last-child { border-bottom: none; }
+
+    td {
+      padding: 0.9rem 0.75rem;
+      vertical-align: middle;
+    }
+
+    /* The inline edit form lives inside a table row */
+    .edit-form {
+      display: none;  /* toggled by JS */
+      background: var(--surface2);
+      border-radius: var(--radius);
+      padding: 1.2rem;
+      margin: 0.5rem 0;
+    }
+
+    .edit-form.open { display: block; }
+
+    .edit-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 100px 100px;
+      gap: 0.75rem;
+      align-items: end;
+      margin-bottom: 0.75rem;
+    }
+
+    @media (max-width: 700px) {
+      .edit-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    .edit-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    /* Vote badge */
+    .vote-badge {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+
+    .vote-badge.a { background: rgba(249,115,22,0.15); color: var(--accent-a); }
+    .vote-badge.b { background: rgba(59,130,246,0.15);  color: var(--accent-b); }
+
+    /* ID badge */
+    .id-badge {
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-family: monospace;
+    }
+
+    .option-preview {
+      color: var(--text);
+      max-width: 260px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .action-btns {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    /* -----------------------------------------------
+       PENDING SUBMISSIONS SECTION
+    ----------------------------------------------- */
+
+    /* Orange-tinted card to visually separate it from live questions */
+    .pending-card {
+      margin-bottom: 2rem;
+      border-color: rgba(249,115,22,0.35);
+    }
+
+    .pending-card h2 {
+      font-size: 1.1rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .pending-subtitle {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 1.4rem;
+    }
+
+    /* Badge showing how many are waiting */
+    .pending-count {
+      display: inline-block;
+      background: rgba(249,115,22,0.2);
+      color: var(--accent-a);
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.15rem 0.6rem;
+      margin-left: 0.5rem;
+      vertical-align: middle;
+    }
+
+    /* Each pending submission sits in its own row card */
+    .pending-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .pending-item:last-child { margin-bottom: 0; }
+
+    .pending-options {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .pending-option {
+      font-size: 0.9rem;
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    /* "A" and "B" labels beside each option */
+    .pending-option span.tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.1rem 0.45rem;
+      border-radius: 4px;
+      margin-right: 0.4rem;
+      vertical-align: middle;
+    }
+
+    .tag.a { background: rgba(249,115,22,0.2); color: var(--accent-a); }
+    .tag.b { background: rgba(59,130,246,0.2);  color: var(--accent-b); }
+
+    /* Approve / Deny buttons sit side by side */
+    .pending-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    /* Empty state when no submissions are waiting */
+    .pending-empty {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+      padding: 1.5rem 0 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- -----------------------------------------------
+       Jinja2 checks which "view" Flask passed in.
+       view="login"     → show the login form
+       view="dashboard" → show the admin dashboard
+  ----------------------------------------------- -->
+
+  {% if view == "login" %}
+  <!-- ===============================================
+       LOGIN PAGE
+  =============================================== -->
+  <div class="login-wrap">
+    <div class="card">
+      <h1>Admin Login</h1>
+      <p>Would You Rather — control panel</p>
+
+      <!-- Show error message if credentials were wrong -->
+      {% if error %}
+        <div class="error-msg">{{ error }}</div>
+      {% endif %}
+
+      <!--
+        method="POST" sends the form data to /admin.
+        Flask's admin_login() route handles it.
+      -->
+      <form method="POST" action="/admin">
+        <div class="field">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" autocomplete="off" required/>
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required/>
+        </div>
+        <button type="submit" class="btn btn-primary">Log In</button>
+      </form>
+    </div>
+  </div>
+
+
+  {% elif view == "dashboard" %}
+  {% set active_tab = active_tab|default('questions') %}
+  <!-- ===============================================
+       DASHBOARD
+  =============================================== -->
+  <div class="dashboard-wrap">
+
+    <!-- Top bar -->
+    <div class="topbar">
+      <h1>Admin Dashboard</h1>
+      <div style="display:flex; gap:0.75rem; align-items:center;">
+        <span style="color:var(--muted); font-size:0.85rem;">
+          {{ questions | length }} live
+          {% if pending %}
+            &nbsp;·&nbsp;
+            <span style="color:var(--accent-a);">{{ pending | length }} pending</span>
+          {% endif %}
+        </span>
+        <form method="POST" action="/admin/reset-votes"
+              onsubmit="return confirm('Reset all vote counts and clear voter history?')"
+              style="margin:0; display:inline;">
+          <button type="submit" class="btn btn-danger">Reset Votes</button>
+        </form>
+        <!-- Logout just hits the /admin/logout route -->
+        <a href="/admin/logout" class="btn btn-ghost">Log Out</a>
+        <a href="/" class="btn btn-ghost" target="_blank">View Site ↗</a>
+      </div>
+    </div>
+
+    <div class="dashboard-tabs">
+      <button type="button" class="tab-btn{% if active_tab == 'questions' %} active{% endif %}" data-tab="questions" onclick="showTab('questions')">Questions</button>
+      <button type="button" class="tab-btn{% if active_tab == 'lobbies' %} active{% endif %}" data-tab="lobbies" onclick="showTab('lobbies')">Lobby Management</button>
+    </div>
+
+    <!-- Show any error passed from Flask (e.g. empty fields) -->
+    {% if error %}
+      <div class="error-msg">{{ error }}</div>
+    {% endif %}
+
+    <div id="tab-questions" style="{% if active_tab == 'questions' %}display:block;{% else %}display:none;{% endif %}">
+      <!-- -----------------------------------------------
+           ADD NEW QUESTION FORM
+      ----------------------------------------------- -->
+      <div class="card add-card">
+        <h2>➕ Add New Question</h2>
+      <form method="POST" action="/admin/add">
+        <div class="add-grid">
+          <div class="field" style="margin:0">
+            <label>Option A</label>
+            <input type="text" name="option_a" placeholder="e.g. Have spaghetti for hair" required/>
+          </div>
+          <div class="field" style="margin:0">
+            <label>Option B</label>
+            <input type="text" name="option_b" placeholder="e.g. Sweat marinara sauce" required/>
+          </div>
+          <div>
+            <button type="submit" class="btn btn-success">Add Question</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- -----------------------------------------------
+         PENDING SUBMISSIONS
+         Only shown if there's at least one waiting.
+         Flask passes the pending list separately.
+    ----------------------------------------------- -->
+    {% if pending %}
+    <div class="card pending-card">
+      <h2>
+        ⏳ Pending Submissions
+        <span class="pending-count">{{ pending | length }}</span>
+      </h2>
+      <p class="pending-subtitle">
+        These were submitted by visitors. Approve to make them live, or deny to delete them.
+      </p>
+
+      {% for q in pending %}
+      <div class="pending-item">
+
+        <!-- Show both options stacked -->
+        <div class="pending-options">
+          <div class="pending-option">
+            <span class="tag a">A</span>{{ q.option_a }}
+          </div>
+          <div class="pending-option" style="margin-top:0.4rem">
+            <span class="tag b">B</span>{{ q.option_b }}
+          </div>
+        </div>
+
+        <!-- Approve and Deny buttons -->
+        <div class="pending-actions">
+
+          <!-- Approve — sets pending=False so it goes live -->
+          <form method="POST" action="/admin/approve">
+            <input type="hidden" name="question_id" value="{{ q.id }}"/>
+            <button type="submit" class="btn btn-success">✓ Approve</button>
+          </form>
+
+          <!-- Deny — deletes the question entirely -->
+          <form method="POST" action="/admin/deny"
+                onsubmit="return confirm('Deny and delete this submission?')">
+            <input type="hidden" name="question_id" value="{{ q.id }}"/>
+            <button type="submit" class="btn btn-danger">✕ Deny</button>
+          </form>
+
+        </div>
+      </div>
+      {% endfor %}
+
+    </div>
+    {% endif %}
+
+    <!-- -----------------------------------------------
+         QUESTIONS TABLE
+    ----------------------------------------------- -->
+    <div class="card table-card">
+      <h2>All Questions</h2>
+
+      <table>
+        <thead>
+          <tr>
+            <th style="width:40px">ID</th>
+            <th>Option A</th>
+            <th>Option B</th>
+            <th>Votes A</th>
+            <th>Votes B</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!--
+            Loop through every question Flask passed to this template.
+            For each one, show a summary row + a hidden edit form below it.
+          -->
+          {% for q in questions %}
+          <tr>
+            <!-- ID -->
+            <td><span class="id-badge">#{{ q.id }}</span></td>
+
+            <!-- Option previews (truncated with CSS) -->
+            <td><span class="option-preview">{{ q.option_a }}</span></td>
+            <td><span class="option-preview">{{ q.option_b }}</span></td>
+
+            <!-- Vote counts -->
+            <td><span class="vote-badge a">{{ q.votes_a }}</span></td>
+            <td><span class="vote-badge b">{{ q.votes_b }}</span></td>
+
+            <!-- Edit / Delete buttons -->
+            <td>
+              <div class="action-btns">
+                <!--
+                  onclick toggles the edit form for THIS question.
+                  Each form has a unique id using the question's id.
+                -->
+                <button class="btn btn-primary"
+                        onclick="toggleEdit({{ q.id }})">
+                  Edit
+                </button>
+
+                <!--
+                  Delete uses a tiny inline form so we can send a POST
+                  request with the question id. We confirm first so
+                  you don't accidentally delete something.
+                -->
+                <form method="POST" action="/admin/delete"
+                      onsubmit="return confirm('Delete this question?')">
+                  <input type="hidden" name="question_id" value="{{ q.id }}"/>
+                  <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+
+          <!-- INLINE EDIT FORM — hidden until Edit is clicked -->
+          <tr>
+            <td colspan="6" style="padding: 0 0.75rem;">
+              <div class="edit-form" id="edit-{{ q.id }}">
+                <form method="POST" action="/admin/edit">
+
+                  <!-- Send the question ID so Flask knows which one to update -->
+                  <input type="hidden" name="question_id" value="{{ q.id }}"/>
+
+                  <div class="edit-grid">
+                    <div class="field" style="margin:0">
+                      <label>Option A</label>
+                      <input type="text" name="option_a"
+                             value="{{ q.option_a }}" required/>
+                    </div>
+                    <div class="field" style="margin:0">
+                      <label>Option B</label>
+                      <input type="text" name="option_b"
+                             value="{{ q.option_b }}" required/>
+                    </div>
+                    <div class="field" style="margin:0">
+                      <label>Votes A</label>
+                      <input type="number" name="votes_a"
+                             value="{{ q.votes_a }}" min="0"/>
+                    </div>
+                    <div class="field" style="margin:0">
+                      <label>Votes B</label>
+                      <input type="number" name="votes_b"
+                             value="{{ q.votes_b }}" min="0"/>
+                    </div>
+                  </div>
+
+                  <div class="edit-actions">
+                    <button type="submit" class="btn btn-success">Save</button>
+                    <button type="button" class="btn btn-ghost"
+                            onclick="toggleEdit({{ q.id }})">Cancel</button>
+                  </div>
+
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    </div>
+
+    <div id="tab-lobbies" style="{% if active_tab == 'lobbies' %}display:block;{% else %}display:none;{% endif %}">
+      <div class="card add-card">
+        <h2>🔧 Lobby Management</h2>
+        <p class="pending-subtitle">Create a new lobby manually or delete an existing one.</p>
+
+        {% if new_lobby %}
+          <div class="pending-count" style="background: rgba(34,197,94,0.2); color: var(--success);">
+            Created lobby {{ new_lobby }}
+          </div>
+        {% endif %}
+
+        <form method="POST" action="/admin/add-lobby">
+          <div class="add-grid">
+            <div class="field" style="margin:0">
+              <label>Host nickname</label>
+              <input type="text" name="nickname" placeholder="e.g. Alex" required />
+            </div>
+            <div>
+              <button type="submit" class="btn btn-success">Create Lobby</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="card table-card">
+        <h2>Active Lobbies</h2>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width:90px">ID</th>
+              <th>Host</th>
+              <th>Players</th>
+              <th>Current Question</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% if lobbies %}
+              {% for lobby in lobbies %}
+              <tr>
+                <td><span class="id-badge">{{ lobby.id }}</span></td>
+                <td>{{ lobby.host }}</td>
+                <td>{{ lobby.players | length }}</td>
+                <td>
+                  {% if lobby.current_question %}
+                    <span>{{ lobby.current_question.option_a }}</span>
+                    <strong style="margin:0 0.4rem; color:var(--muted);">vs</strong>
+                    <span>{{ lobby.current_question.option_b }}</span>
+                  {% else %}
+                    Finished
+                  {% endif %}
+                </td>
+                <td>{{ lobby.created_at_str }}</td>
+                <td>
+                  <div class="action-btns">
+                    <a href="/challenge/{{ lobby.id }}" target="_blank" class="btn btn-ghost">Open</a>
+                    <form method="POST" action="/admin/delete-lobby" onsubmit="return confirm('Delete this lobby?')">
+                      <input type="hidden" name="lobby_id" value="{{ lobby.id }}"/>
+                      <button type="submit" class="btn btn-danger">Delete</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="6" class="pending-empty">No active lobbies.</td>
+              </tr>
+            {% endif %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+  {% endif %}
+
+  <!-- -----------------------------------------------
+       JAVASCRIPT — just the edit toggle
+  ----------------------------------------------- -->
+  <script>
+    /*
+      toggleEdit(id) shows or hides the inline edit form
+      for a given question. It adds/removes the 'open' CSS class
+      which switches the form from display:none to display:block.
+    */
+    function toggleEdit(id) {
+      const form = document.getElementById("edit-" + id);
+      form.classList.toggle("open");
+    }
+
+    function showTab(tab) {
+      document.getElementById('tab-questions').style.display = tab === 'questions' ? 'block' : 'none';
+      document.getElementById('tab-lobbies').style.display = tab === 'lobbies' ? 'block' : 'none';
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tab);
+      });
+    }
+
+    showTab('{{ active_tab|default('questions') }}');
+  </script>
+
+</body>
+</html>

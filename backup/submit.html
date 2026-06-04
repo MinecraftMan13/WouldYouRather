@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Submit a Question — Would You Rather</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Karla:wght@400;600&display=swap" rel="stylesheet"/>
+
+  <style>
+    :root {
+      --bg:       #0f0f13;
+      --surface:  #1a1a24;
+      --surface2: #222230;
+      --border:   #2e2e42;
+      --text:     #e8e8f0;
+      --muted:    #7070a0;
+      --accent-a: #f97316;
+      --accent-b: #3b82f6;
+      --success:  #22c55e;
+      --danger:   #ef4444;
+      --radius:   16px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      background-image: radial-gradient(circle, #2a2a3a 1px, transparent 1px);
+      background-size: 28px 28px;
+      color: var(--text);
+      font-family: 'Karla', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 520px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    header { text-align: center; }
+
+    header h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 800;
+      background: linear-gradient(90deg, var(--accent-a), var(--accent-b));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    header p { color: var(--muted); margin-top: 0.4rem; font-size: 0.9rem; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2rem;
+      animation: fadeUp 0.35s ease both;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 0.35rem;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'Karla', sans-serif;
+      font-size: 0.95rem;
+      padding: 0.7rem 1rem;
+      outline: none;
+      transition: border-color 0.2s;
+      margin-bottom: 1rem;
+    }
+
+    input[type="text"]:focus { border-color: var(--accent-b); }
+
+    .hint {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 1.2rem;
+      line-height: 1.5;
+    }
+
+    .btn-submit {
+      width: 100%;
+      padding: 0.85rem;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
+      color: #fff;
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+
+    .btn-submit:hover { opacity: 0.88; transform: translateY(-1px); }
+
+    /* Error message */
+    .error-msg {
+      background: rgba(239,68,68,0.12);
+      border: 1px solid var(--danger);
+      border-radius: 8px;
+      color: #fca5a5;
+      font-size: 0.9rem;
+      padding: 0.7rem 1rem;
+      margin-bottom: 1rem;
+    }
+
+    /* Success state — replaces the form */
+    .success-box {
+      text-align: center;
+      padding: 1rem 0;
+    }
+
+    .success-box .icon {
+      font-size: 2.5rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .success-box h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.3rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .success-box p { color: var(--muted); font-size: 0.9rem; }
+
+    .back-link {
+      display: block;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.88rem;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .back-link:hover { color: var(--text); }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <header>
+      <h1>Submit a Question</h1>
+      <p>Think you've got a good one? Let's hear it.</p>
+    </header>
+
+    <div class="card">
+
+      <!--
+        If Flask passed success=True, show the confirmation.
+        Otherwise show the form (with an optional error message).
+      -->
+      {% if success %}
+
+        <div class="success-box">
+          <div class="icon">🎉</div>
+          <h2>Question submitted!</h2>
+          <p>It'll go live once the admin reviews it. Thanks for contributing!</p>
+        </div>
+
+      {% else %}
+
+        {% if error %}
+          <div class="error-msg">{{ error }}</div>
+        {% endif %}
+
+        <p class="hint">
+          Write two options for a Would You Rather question.
+          Keep it fun — the weirder the better. Your question will
+          be reviewed before going live.
+        </p>
+
+        <form method="POST" action="/submit">
+          <label for="option_a">Option A — Would you rather...</label>
+          <input type="text" id="option_a" name="option_a"
+                 placeholder="e.g. Only be able to whisper forever"
+                 required/>
+
+          <label for="option_b">Option B — Or would you rather...</label>
+          <input type="text" id="option_b" name="option_b"
+                 placeholder="e.g. Only be able to shout forever"
+                 required/>
+
+          <button type="submit" class="btn-submit">Submit Question</button>
+        </form>
+
+      {% endif %}
+
+    </div>
+
+    <a href="/" class="back-link">← Back to playing</a>
+
+  </div>
+</body>
+</html>

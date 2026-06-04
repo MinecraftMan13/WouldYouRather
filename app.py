@@ -3,9 +3,10 @@ import random
 import os
 import time
 import queue
+import threading
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, Response
 from dotenv import load_dotenv
-from waitress import serve
+from waitress.server import create_server
 
 
 
@@ -152,6 +153,33 @@ def cleanup_lobbies(lobbies):
 
 # Global list of queues — one per connected browser
 listeners = []
+shutdown_event = threading.Event()
+
+
+def request_server_shutdown(server):
+    shutdown_event.set()
+
+    for q in list(listeners):
+        try:
+            q.put_nowait(None)
+        except Exception:
+            pass
+
+    server.trigger.pull_trigger(server.close)
+
+
+def patch_server_pull_trigger(server):
+    original_pull_trigger = server.pull_trigger
+
+    def safe_pull_trigger():
+        try:
+            original_pull_trigger()
+        except OSError:
+            if shutdown_event.is_set():
+                return
+            raise
+
+    server.pull_trigger = safe_pull_trigger
 
 def push_vote_event(option_text):
     """
@@ -159,8 +187,11 @@ def push_vote_event(option_text):
     Each listener is a Queue object. We put a message in
     each one and the SSE stream picks it up.
     """
+    if shutdown_event.is_set():
+        return
+
     dead = []
-    for q in listeners:
+    for q in list(listeners):
         try:
             q.put_nowait(option_text)
         except Exception:
@@ -695,12 +726,14 @@ def stream():
         listeners.append(q)
 
         try:
-            while True:
+            while not shutdown_event.is_set():
                 try:
                     # Wait up to 25 seconds for a vote event.
                     # If nothing comes, send a keep-alive comment
                     # so the connection doesn't time out.
                     message = q.get(timeout=25)
+                    if message is None:
+                        break
                     # SSE format: "data: <message>\n\n"
                     yield f"data: {message}\n\n"
                 except queue.Empty:
@@ -1064,7 +1097,24 @@ def admin_logout():
 # RUN THE APP
 # -----------------------------------------------
 
+def wait_for_close_command(server):
+    while True:
+        try:
+            command = input().strip().lower()
+        except EOFError:
+            break
+
+        if command == "close":
+            print("Stopping server...")
+            request_server_shutdown(server)
+            break
+
+
 if __name__ == "__main__":
     print("Running on http://0.0.0.0:80")
-    serve(app, host='0.0.0.0', port=80, threads=12)
+    print("Type close to stop server")
+    server = create_server(app, host="0.0.0.0", port=80, threads=12)
+    patch_server_pull_trigger(server)
+    threading.Thread(target=wait_for_close_command, args=(server,), daemon=True).start()
+    server.run()
     

@@ -3,7 +3,7 @@
     "id": 1,
     "option_a": "Have spaghetti for hair",
     "option_b": "Sweat marinara sauce",
-    "votes_a": 1,
+    "votes_a": 2,
     "votes_b": 0
   },
   {
@@ -73,14 +73,14 @@
     "id": 11,
     "option_a": "Always have wet socks",
     "option_b": "Always have a popcorn kernel stuck in your teeth",
-    "votes_a": 0,
+    "votes_a": 1,
     "votes_b": 1
   },
   {
     "id": 12,
     "option_a": "Only be able to eat food off the floor like a dog",
     "option_b": "Only be able to drink through your nose",
-    "votes_a": 0,
+    "votes_a": 1,
     "votes_b": 1
   },
   {
@@ -101,7 +101,7 @@
     "id": 15,
     "option_a": "Have a theme song that plays every time you enter a room",
     "option_b": "Have a laugh track play every time something bad happens to you",
-    "votes_a": 0,
+    "votes_a": 1,
     "votes_b": 0
   },
   {
@@ -115,7 +115,7 @@
     "id": 17,
     "option_a": "Only be able to text in pirate speak",
     "option_b": "Only be able to speak in rhymes out loud",
-    "votes_a": 0,
+    "votes_a": 1,
     "votes_b": 0
   },
   {
@@ -185,14 +185,14 @@
     "id": 27,
     "option_a": "Get matched with one sweaty tryhard named \"XxNoScopeDadxX\" every game",
     "option_b": "Get matched with one teammate who says \"trust me\" and immediately sells",
-    "votes_a": 0,
+    "votes_a": 1,
     "votes_b": 0
   },
   {
     "id": 28,
     "option_a": "Have your loot always be common trash, but never get third partied",
     "option_b": "Get legendary loot every match, but only after you die for it",
-    "votes_a": 0,
+    "votes_a": 1,
     "votes_b": 0
   },
   {
@@ -241,7 +241,7 @@
     "id": 35,
     "option_a": "Only get healing items when you are already at full health",
     "option_b": "Only get ammo when the enemy is literally one shot",
-    "votes_a": 0,
+    "votes_a": 1,
     "votes_b": 0
   },
   {
@@ -269,7 +269,7 @@
     "id": 39,
     "option_a": "Have your gamer tag appear in all caps when you win and lowercase when you lose",
     "option_b": "Have the game text you \"skill issue\" after every defeat",
-    "votes_a": 0,
+    "votes_a": 1,
     "votes_b": 0
   },
   {
@@ -423,7 +423,7 @@
     "id": 61,
     "option_a": "Eat fries dipped in pudding",
     "option_b": "Eat pancakes dipped in pickle brine",
-    "votes_a": 0,
+    "votes_a": 1,
     "votes_b": 0
   },
   {
@@ -444,7 +444,7 @@
     "id": 64,
     "option_a": "Have a tiny piece of onion in every bite forever",
     "option_b": "Have a tiny piece of toothpaste in every bite forever",
-    "votes_a": 0,
+    "votes_a": 1,
     "votes_b": 0
   },
   {
@@ -458,7 +458,7 @@
     "id": 66,
     "option_a": "Poop in front of your crush",
     "option_b": "Have your crush poop in front of you",
-    "votes_a": 0,
+    "votes_a": 1,
     "votes_b": 0,
     "pending": false
   },

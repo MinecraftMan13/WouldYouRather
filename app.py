@@ -4,6 +4,8 @@ import os
 import time
 import queue
 import threading
+import ipaddress
+import tempfile
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, Response
 from dotenv import load_dotenv
 from waitress.server import create_server
@@ -31,30 +33,84 @@ IP_LOG_FILE    = "ip_log.json"
 LOBBIES_FILE   = "lobbies.json"
 USER_VOTES_FILE = "user_votes.json"
 VISITORS_FILE = "visitors.json"
+APP_HOST = os.getenv("APP_HOST", "127.0.0.1")
+APP_PORT = int(os.getenv("APP_PORT", "5000"))
+json_decoder = json.JSONDecoder()
+json_file_locks = {}
+json_file_locks_guard = threading.Lock()
+
+
+def get_json_file_lock(path):
+    normalized_path = os.path.abspath(path)
+    with json_file_locks_guard:
+        if normalized_path not in json_file_locks:
+            json_file_locks[normalized_path] = threading.Lock()
+        return json_file_locks[normalized_path]
+
+
+def load_json_file(path, default, encoding="utf-8"):
+    if not os.path.exists(path):
+        return default
+
+    with get_json_file_lock(path):
+        with open(path, "r", encoding=encoding) as f:
+            contents = f.read().strip()
+
+    if not contents:
+        return default
+
+    try:
+        return json.loads(contents)
+    except json.JSONDecodeError:
+        # Recover the first valid JSON value if a concurrent write left
+        # trailing garbage at the end of the file.
+        try:
+            value, _ = json_decoder.raw_decode(contents)
+            return value
+        except json.JSONDecodeError:
+            return default
+
+
+def save_json_file(path, data, encoding="utf-8"):
+    directory = os.path.dirname(os.path.abspath(path)) or "."
+    lock = get_json_file_lock(path)
+
+    with lock:
+        last_error = None
+        for attempt in range(5):
+            fd, temp_path = tempfile.mkstemp(prefix="wyr_", suffix=".tmp", dir=directory)
+            try:
+                with os.fdopen(fd, "w", encoding=encoding) as f:
+                    json.dump(data, f, indent=2)
+                    f.flush()
+                    os.fsync(f.fileno())
+                os.replace(temp_path, path)
+                return
+            except PermissionError as exc:
+                last_error = exc
+                time.sleep(0.1 * (attempt + 1))
+            finally:
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+
+        if last_error is not None:
+            raise last_error
 
 
 def load_lobbies():
-    if not os.path.exists(LOBBIES_FILE):
-        return {}
-    with open(LOBBIES_FILE, "r") as f:
-        return json.load(f)
+    return load_json_file(LOBBIES_FILE, {})
 
 
 def save_lobbies(lobbies):
-    with open(LOBBIES_FILE, "w") as f:
-        json.dump(lobbies, f, indent=2)
+    save_json_file(LOBBIES_FILE, lobbies)
 
 
 def load_visitors():
-    if not os.path.exists(VISITORS_FILE):
-        return {}
-    with open(VISITORS_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+    return load_json_file(VISITORS_FILE, {})
 
 
 def save_visitors(visitors):
-    with open(VISITORS_FILE, "w", encoding="utf-8") as f:
-        json.dump(visitors, f, indent=2)
+    save_json_file(VISITORS_FILE, visitors)
 
 
 def generate_lobby_id():
@@ -207,13 +263,11 @@ def push_vote_event(option_text):
 
 def load_questions():
     """Read questions.json and return it as a Python list."""
-    with open(QUESTIONS_FILE, "r") as f:
-        return json.load(f)
+    return load_json_file(QUESTIONS_FILE, [])
 
 def save_questions(questions):
     """Write the updated questions list back to questions.json."""
-    with open(QUESTIONS_FILE, "w") as f:
-        json.dump(questions, f, indent=2)
+    save_json_file(QUESTIONS_FILE, questions)
 
 def next_id(questions):
     all_questions = questions
@@ -227,30 +281,69 @@ def next_id(questions):
 # -----------------------------------------------
 
 def load_ip_log():
-    if not os.path.exists(IP_LOG_FILE):
-        return {}
-    with open(IP_LOG_FILE, "r") as f:
-        return json.load(f)
+    return load_json_file(IP_LOG_FILE, {})
 
 def load_user_votes():
-    if not os.path.exists(USER_VOTES_FILE):
-        return {}
-    with open(USER_VOTES_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+    return load_json_file(USER_VOTES_FILE, {})
 
 def save_user_votes(data):
-    with open(USER_VOTES_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+    save_json_file(USER_VOTES_FILE, data)
 
 def save_ip_log(ip_log):
-    with open(IP_LOG_FILE, "w") as f:
-        json.dump(ip_log, f, indent=2)
+    save_json_file(IP_LOG_FILE, ip_log)
+
+
+def is_loopback_address(value):
+    try:
+        return ipaddress.ip_address(value).is_loopback
+    except ValueError:
+        return False
+
+
+def get_forwarded_ip():
+    forwarded_for = request.headers.get("X-Forwarded-For", "")
+    if forwarded_for:
+        forwarded_ip = forwarded_for.split(",")[0].strip()
+        if forwarded_ip:
+            return forwarded_ip
+
+    x_real_ip = (request.headers.get("X-Real-IP") or "").strip()
+    if x_real_ip:
+        return x_real_ip
+
+    forwarded_header = (request.headers.get("Forwarded") or "").strip()
+    if forwarded_header:
+        for part in forwarded_header.split(";"):
+            key, _, value = part.partition("=")
+            if key.strip().lower() == "for" and value:
+                return value.strip().strip('"').strip("[]")
+
+    return None
+
 
 def get_client_ip():
+    remote_addr = request.remote_addr or ""
+
+    # Only trust forwarded headers when a local reverse proxy is in front
+    # of the app. This fits Tailscale Serve/Funnel, which connects locally.
+    if is_loopback_address(remote_addr):
+        forwarded_ip = get_forwarded_ip()
+        if forwarded_ip:
+            return forwarded_ip
+
+    return remote_addr
+
+
+def log_request_connection():
+    client_ip = get_client_ip()
+    proxy_ip = request.remote_addr or "unknown"
     forwarded_for = request.headers.get("X-Forwarded-For")
+    source = "forwarded" if client_ip != proxy_ip else "direct"
+
     if forwarded_for:
-        return forwarded_for.split(",")[0].strip()
-    return request.remote_addr
+        print(f"Connection established from: {client_ip} ({source}, proxy={proxy_ip}, xff={forwarded_for})")
+    else:
+        print(f"Connection established from: {client_ip} ({source})")
 
 
 def record_visitor(ip, path):
@@ -355,7 +448,7 @@ def track_and_block_visitors():
 # -----------------------------------------------
 @app.route("/")
 def index():
-    print(f"Connection established from: {request.remote_addr}")
+    log_request_connection()
     questions    = load_questions()
     ip           = get_client_ip()
     ip_log       = load_ip_log()
@@ -1077,12 +1170,10 @@ def admin_reset_votes():
 
     # Clear the IP log so visitors can vote again from a clean state.
     if os.path.exists(IP_LOG_FILE):
-        with open(IP_LOG_FILE, "w") as f:
-            json.dump({}, f, indent=2)
+        save_json_file(IP_LOG_FILE, {})
     # Also clear per-user vote history
     if os.path.exists(USER_VOTES_FILE):
-        with open(USER_VOTES_FILE, "w", encoding="utf-8") as f:
-            json.dump({}, f, indent=2)
+        save_json_file(USER_VOTES_FILE, {})
 
     return redirect(url_for("admin_dashboard"))
 
@@ -1111,9 +1202,9 @@ def wait_for_close_command(server):
 
 
 if __name__ == "__main__":
-    print("Running on http://0.0.0.0:80")
+    print(f"Running on http://{APP_HOST}:{APP_PORT}")
     print("Type close to stop server")
-    server = create_server(app, host="0.0.0.0", port=80, threads=12)
+    server = create_server(app, host=APP_HOST, port=APP_PORT, threads=12)
     patch_server_pull_trigger(server)
     threading.Thread(target=wait_for_close_command, args=(server,), daemon=True).start()
     server.run()

@@ -9,6 +9,9 @@ venv/
 ip_log.json
 user_votes.json
 visitors.json
+lobbies.json
+
+
 __pycache__/
 *.pyc
 

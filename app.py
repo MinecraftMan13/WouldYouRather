@@ -106,8 +106,40 @@ def save_json_file(path, data, encoding="utf-8"):
             raise last_error
 
 
+def set_timestamp_fields(record, field_name, timestamp=None):
+    if timestamp is None:
+        timestamp = time.time()
+    record[field_name] = timestamp
+    record[f"{field_name}_eastern"] = format_timestamp_eastern(timestamp)
+
+
+def normalize_lobby_timestamps(lobbies):
+    changed = False
+    for lobby in lobbies.values():
+        created_at = lobby.get("created_at")
+        if created_at is not None and not lobby.get("created_at_eastern"):
+            lobby["created_at_eastern"] = format_timestamp_eastern(created_at)
+            changed = True
+
+        for player in lobby.get("players", {}).values():
+            joined_at = player.get("joined_at")
+            if joined_at is not None and not player.get("joined_at_eastern"):
+                player["joined_at_eastern"] = format_timestamp_eastern(joined_at)
+                changed = True
+
+            last_seen = player.get("last_seen")
+            if last_seen is not None and not player.get("last_seen_eastern"):
+                player["last_seen_eastern"] = format_timestamp_eastern(last_seen)
+                changed = True
+
+    return changed
+
+
 def load_lobbies():
-    return load_json_file(LOBBIES_FILE, {})
+    lobbies = load_json_file(LOBBIES_FILE, {})
+    if normalize_lobby_timestamps(lobbies):
+        save_json_file(LOBBIES_FILE, lobbies)
+    return lobbies
 
 
 def save_lobbies(lobbies):
@@ -180,9 +212,9 @@ def get_lobby_question(lobby):
 
 def update_player_timestamp(player):
     now = time.time()
-    player["last_seen"] = now
+    set_timestamp_fields(player, "last_seen", now)
     if "joined_at" not in player:
-        player["joined_at"] = now
+        set_timestamp_fields(player, "joined_at", now)
 
 
 def remove_stale_players(lobby, max_idle_seconds=120):
@@ -539,14 +571,21 @@ def create_challenge():
     lobby_id = generate_lobby_id()
     lobbies = load_lobbies()
     cleanup_lobbies(lobbies)
-    lobbies[lobby_id] = {
+    now = time.time()
+    host_player = {"choice": None}
+    set_timestamp_fields(host_player, "joined_at", now)
+    set_timestamp_fields(host_player, "last_seen", now)
+    lobby_record = {
         "id": lobby_id,
         "question_ids": question_ids,
         "current_index": 0,
         "players": {
-            nickname: {"choice": None, "joined_at": time.time(), "last_seen": time.time()}
-        },
-        "created_at": time.time()
+            nickname: host_player
+        }
+    }
+    set_timestamp_fields(lobby_record, "created_at", now)
+    lobbies[lobby_id] = {
+        **lobby_record
     }
     save_lobbies(lobbies)
     return redirect(url_for("challenge", lobby_id=lobby_id, nickname=nickname))
@@ -588,7 +627,10 @@ def challenge(lobby_id):
                                    lobby_id=lobby_id,
                                    players=lobby.get("players", {}),
                                    error="This lobby is already full.")
-        lobby["players"][nickname] = {"choice": None, "joined_at": time.time(), "last_seen": time.time()}
+        now = time.time()
+        lobby["players"][nickname] = {"choice": None}
+        set_timestamp_fields(lobby["players"][nickname], "joined_at", now)
+        set_timestamp_fields(lobby["players"][nickname], "last_seen", now)
 
     update_player_timestamp(lobby["players"][nickname])
     save_lobbies(lobbies)
@@ -1017,15 +1059,20 @@ def admin_add_lobby():
         lobby_id = generate_lobby_id()
         lobbies = load_lobbies()
         cleanup_lobbies(lobbies)
-        lobbies[lobby_id] = {
+        now = time.time()
+        host_player = {"choice": None}
+        set_timestamp_fields(host_player, "joined_at", now)
+        set_timestamp_fields(host_player, "last_seen", now)
+        lobby_record = {
             "id": lobby_id,
             "question_ids": question_ids,
             "current_index": 0,
             "players": {
-                nickname: {"choice": None, "joined_at": time.time(), "last_seen": time.time()}
-            },
-            "created_at": time.time()
+                nickname: host_player
+            }
         }
+        set_timestamp_fields(lobby_record, "created_at", now)
+        lobbies[lobby_id] = lobby_record
         save_lobbies(lobbies)
         return redirect(url_for("admin_dashboard", new_lobby=lobby_id, tab="lobbies"))
 

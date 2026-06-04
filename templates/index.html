@@ -8,7 +8,7 @@
   <!-- Open Graph tags — controls how the link looks when shared on
        Twitter, Discord, iMessage, etc. Flask fills in the question text. -->
   <meta property="og:title"       content="Would You Rather?"/>
-  <meta property="og:description" content="{{ question.option_a }} OR {{ question.option_b }}"/>
+  <meta property="og:description" content="{{ question.option_a ~ ' OR ' ~ question.option_b if question else 'Vote, compare, and revisit your history anytime.' }}"/>
   <meta property="og:type"        content="website"/>
 
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Karla:wght@400;600&display=swap" rel="stylesheet"/>
@@ -402,6 +402,7 @@
     <div class="card">
 
       <!-- QUESTION SECTION -->
+      {% if question %}
       <div id="question-section">
         <button class="option-btn a" data-choice="a" onclick="vote(this)">
           {{ question.option_a }}
@@ -411,6 +412,17 @@
           {{ question.option_b }}
         </button>
       </div>
+      {% else %}
+      <div id="question-section">
+        <p style="text-align:center; color:var(--muted); padding:1rem 0;">
+          {% if all_answered %}
+          You've answered every live question. Use My History to change a vote or come back after new questions are added.
+          {% else %}
+          No live questions are available right now.
+          {% endif %}
+        </p>
+      </div>
+      {% endif %}
 
       <!-- RESULTS SECTION -->
       <div id="results-section">
@@ -479,9 +491,9 @@
   ----------------------------------------------- -->
   <script>
     // Jinja2 fills these in when Flask renders the page
-    const QUESTION_ID   = {{ question.id | tojson }};
-    const OPTION_A_TEXT = {{ question.option_a | tojson }};
-    const OPTION_B_TEXT = {{ question.option_b | tojson }};
+    const QUESTION_ID   = {{ (question.id if question else none) | tojson }};
+    const OPTION_A_TEXT = {{ (question.option_a if question else "") | tojson }};
+    const OPTION_B_TEXT = {{ (question.option_b if question else "") | tojson }};
 
     // The shareable URL for this specific question
     // e.g. https://yoursite.com/question/4
@@ -496,6 +508,7 @@
        VOTE
     ----------------------------------------------- */
     async function vote(button) {
+      if (QUESTION_ID === null) return;
       const choice = button.dataset.choice;
 
       // Disable buttons immediately to prevent double-voting

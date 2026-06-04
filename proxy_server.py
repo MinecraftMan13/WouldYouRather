@@ -1,5 +1,6 @@
 import http.client
 import os
+import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 
@@ -66,9 +67,6 @@ class ProxyProtocolHTTPHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.forward_request()
 
-    def do_POST(self):
-        self.forward_request()
-
     def do_PUT(self):
         self.forward_request()
 
@@ -82,6 +80,12 @@ class ProxyProtocolHTTPHandler(BaseHTTPRequestHandler):
         self.forward_request()
 
     def do_OPTIONS(self):
+        self.forward_request()
+
+    def do_POST(self):
+        if self.path == "/__shutdown__":
+            self.handle_shutdown_request()
+            return
         self.forward_request()
 
     def forward_request(self):
@@ -135,6 +139,16 @@ class ProxyProtocolHTTPHandler(BaseHTTPRequestHandler):
         finally:
             connection.close()
 
+    def handle_shutdown_request(self):
+        if self.client_address[0] not in {"127.0.0.1", "::1"}:
+            self.send_error(403, "Forbidden")
+            return
+
+        self.send_response(200, "Shutting down")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+        threading.Thread(target=self.server.shutdown, daemon=True).start()
+
     def log_message(self, format_string, *args):
         print(
             "%s - - [%s] %s"
@@ -151,4 +165,7 @@ if __name__ == "__main__":
     print(f"Forwarding traffic to http://{BACKEND_HOST}:{BACKEND_PORT}")
     print("Expecting Tailscale PROXY protocol v1 connections.")
     server = ThreadingHTTPServer((PROXY_HOST, PROXY_PORT), ProxyProtocolHTTPHandler)
-    server.serve_forever()
+    try:
+        server.serve_forever()
+    finally:
+        server.server_close()

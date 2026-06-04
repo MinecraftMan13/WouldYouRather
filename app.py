@@ -6,6 +6,9 @@ import queue
 import threading
 import ipaddress
 import tempfile
+import http.client
+import datetime
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, Response
 from dotenv import load_dotenv
 from waitress.server import create_server
@@ -29,15 +32,21 @@ ADMIN_PASSWORD  = os.getenv("ADMIN_PASSWORD")
 
 # File paths
 QUESTIONS_FILE = "questions.json"
-IP_LOG_FILE    = "ip_log.json"
 LOBBIES_FILE   = "lobbies.json"
 USER_VOTES_FILE = "user_votes.json"
 VISITORS_FILE = "visitors.json"
 APP_HOST = os.getenv("APP_HOST", "127.0.0.1")
 APP_PORT = int(os.getenv("APP_PORT", "5000"))
+PROXY_HOST = os.getenv("PROXY_HOST", "127.0.0.1")
+PROXY_PORT = int(os.getenv("PROXY_PORT", "8080"))
 json_decoder = json.JSONDecoder()
 json_file_locks = {}
 json_file_locks_guard = threading.Lock()
+
+try:
+    EASTERN_TZ = ZoneInfo("America/Indiana/Indianapolis")
+except ZoneInfoNotFoundError:
+    EASTERN_TZ = None
 
 
 def get_json_file_lock(path):
@@ -132,6 +141,16 @@ def format_timestamp(timestamp):
     return time.strftime("%Y-%m-%d %H:%M", time.localtime(timestamp))
 
 
+def format_timestamp_eastern(timestamp):
+    if EASTERN_TZ is not None:
+        eastern_time = datetime.datetime.fromtimestamp(timestamp, tz=EASTERN_TZ)
+        return eastern_time.strftime("%Y-%m-%d %I:%M %p ET")
+
+    # Fallback for Windows/Python installs without tzdata. This uses the
+    # machine's local timezone, which matches your ET-hosted setup.
+    return time.strftime("%Y-%m-%d %I:%M %p ET", time.localtime(timestamp))
+
+
 def prepare_lobbies_for_admin(lobbies, question_map):
     sorted_lobbies = []
     for lobby in sorted(lobbies.values(), key=lambda lobby: lobby.get("created_at", 0), reverse=True):
@@ -224,6 +243,22 @@ def request_server_shutdown(server):
     server.trigger.pull_trigger(server.close)
 
 
+def request_proxy_shutdown():
+    try:
+        connection = http.client.HTTPConnection(PROXY_HOST, PROXY_PORT, timeout=2)
+        connection.request("POST", "/__shutdown__")
+        response = connection.getresponse()
+        response.read()
+        return 200 <= response.status < 300
+    except Exception:
+        return False
+    finally:
+        try:
+            connection.close()
+        except Exception:
+            pass
+
+
 def patch_server_pull_trigger(server):
     original_pull_trigger = server.pull_trigger
 
@@ -280,18 +315,11 @@ def next_id(questions):
 # HELPER FUNCTIONS — IP LOG
 # -----------------------------------------------
 
-def load_ip_log():
-    return load_json_file(IP_LOG_FILE, {})
-
 def load_user_votes():
     return load_json_file(USER_VOTES_FILE, {})
 
 def save_user_votes(data):
     save_json_file(USER_VOTES_FILE, data)
-
-def save_ip_log(ip_log):
-    save_json_file(IP_LOG_FILE, ip_log)
-
 
 def is_loopback_address(value):
     try:
@@ -382,35 +410,47 @@ def prepare_visitors_for_admin(visitors):
         prepared.append(visitor)
     return sorted(prepared, key=lambda visitor: visitor.get("last_seen", 0), reverse=True)
 
-def has_voted(ip, question_id):
-    ip_log = load_ip_log()
-    return question_id in ip_log.get(ip, [])
-
-def record_vote(ip, question_id):
-    ip_log = load_ip_log()
-    if ip not in ip_log:
-        ip_log[ip] = []
-    ip_log[ip].append(question_id)
-    save_ip_log(ip_log)
-
-
-def record_user_vote(ip, question_id, choice):
-    """Store per-IP vote records with choice so users can view/change them."""
-    uv = load_user_votes()
-    if ip not in uv:
-        uv[ip] = []
-    # Append a vote record
-    uv[ip].append({
-        "question_id": question_id,
-        "choice": choice,
-        "ts": time.time()
-    })
-    save_user_votes(uv)
-
-
 def get_user_votes_for_ip(ip):
     uv = load_user_votes()
     return uv.get(ip, [])
+
+
+def get_latest_vote_map(records):
+    latest_by_question = {}
+    for record in records:
+        question_id = record.get("question_id")
+        if question_id is None:
+            continue
+        latest_by_question[question_id] = record
+    return latest_by_question
+
+
+def has_voted(ip, question_id):
+    records = get_user_votes_for_ip(ip)
+    return question_id in get_latest_vote_map(records)
+
+
+def record_user_vote(ip, question_id, choice):
+    """Store one current vote per question for this IP."""
+    uv = load_user_votes()
+    if ip not in uv:
+        uv[ip] = []
+    now = time.time()
+    formatted_time = format_timestamp_eastern(now)
+    for record in uv[ip]:
+        if record.get("question_id") == question_id:
+            record["choice"] = choice
+            record["ts"] = now
+            record["ts_eastern"] = formatted_time
+            break
+    else:
+        uv[ip].append({
+            "question_id": question_id,
+            "choice": choice,
+            "ts": now,
+            "ts_eastern": formatted_time
+        })
+    save_user_votes(uv)
 
 
 # -----------------------------------------------
@@ -451,18 +491,18 @@ def index():
     log_request_connection()
     questions    = load_questions()
     ip           = get_client_ip()
-    ip_log       = load_ip_log()
-    answered_ids = ip_log.get(ip, [])
+    records      = get_user_votes_for_ip(ip)
+    answered_ids = set(get_latest_vote_map(records).keys())
 
     # Only show approved (non-pending) questions
     live_questions = [q for q in questions if not q.get("pending", False)]
     unanswered     = [q for q in live_questions if q["id"] not in answered_ids]
 
     if not unanswered:
-        unanswered = live_questions if live_questions else questions
+        return render_template("index.html", question=None, all_answered=bool(live_questions))
 
     question = random.choice(unanswered)
-    return render_template("index.html", question=question)
+    return render_template("index.html", question=question, all_answered=False)
 
 
 @app.route("/question/<int:question_id>")
@@ -671,13 +711,7 @@ def vote():
                 voted_text = question["option_b"]
 
             save_questions(questions)
-            record_vote(ip, question_id)
-            # Also save the user's choice so they can view/change it later
-            try:
-                record_user_vote(ip, question_id, choice)
-            except Exception:
-                # non-fatal; continue even if user vote recording fails
-                pass
+            record_user_vote(ip, question_id, choice)
 
             # Notify all connected browsers about the new vote
             push_vote_event(voted_text)
@@ -700,12 +734,12 @@ def vote():
 @app.route("/my-history")
 def my_history():
     ip = get_client_ip()
-    records = get_user_votes_for_ip(ip)
+    records = list(get_latest_vote_map(get_user_votes_for_ip(ip)).values())
     questions = load_questions()
     qmap = {q["id"]: q for q in questions}
 
     out = []
-    for r in records:
+    for r in sorted(records, key=lambda record: record.get("ts", 0), reverse=True):
         qid = r.get("question_id")
         q = qmap.get(qid)
         if not q:
@@ -716,6 +750,7 @@ def my_history():
             "option_b": q.get("option_b"),
             "choice": r.get("choice"),
             "ts": r.get("ts"),
+            "ts_eastern": r.get("ts_eastern") or format_timestamp_eastern(r.get("ts", 0)),
             "votes_a": q.get("votes_a", 0),
             "votes_b": q.get("votes_b", 0)
         })
@@ -733,13 +768,8 @@ def change_vote():
     if new_choice not in ("a", "b"):
         return jsonify({"error": "Invalid choice"}), 400
 
-    # Find user's most recent record for this question
     records = get_user_votes_for_ip(ip)
-    found = None
-    for r in reversed(records):
-        if r.get("question_id") == question_id:
-            found = r
-            break
+    found = get_latest_vote_map(records).get(question_id)
 
     if not found:
         return jsonify({"error": "No previous vote found for this question"}), 404
@@ -767,16 +797,7 @@ def change_vote():
 
             save_questions(questions)
 
-            # update user record
-            uv = load_user_votes()
-            # update the most recent matching record in uv[ip]
-            if ip in uv:
-                for r in reversed(uv[ip]):
-                    if r.get("question_id") == question_id:
-                        r["choice"] = new_choice
-                        r["ts"] = time.time()
-                        break
-                save_user_votes(uv)
+            record_user_vote(ip, question_id, new_choice)
 
             # Notify others about changed vote (best-effort)
             try:
@@ -1157,7 +1178,7 @@ def admin_deny():
 @app.route("/admin/reset-votes", methods=["POST"])
 def admin_reset_votes():
     """
-    Reset all vote counts and clear the voter log so voting starts fresh.
+    Reset all vote counts and clear vote history so voting starts fresh.
     """
     if not is_logged_in():
         return redirect(url_for("admin_login"))
@@ -1168,10 +1189,7 @@ def admin_reset_votes():
         question["votes_b"] = 0
     save_questions(questions)
 
-    # Clear the IP log so visitors can vote again from a clean state.
-    if os.path.exists(IP_LOG_FILE):
-        save_json_file(IP_LOG_FILE, {})
-    # Also clear per-user vote history
+    # Clear per-user vote history.
     if os.path.exists(USER_VOTES_FILE):
         save_json_file(USER_VOTES_FILE, {})
 
@@ -1197,6 +1215,10 @@ def wait_for_close_command(server):
 
         if command == "close":
             print("Stopping server...")
+            if request_proxy_shutdown():
+                print("Proxy shutdown requested.")
+            else:
+                print("Proxy shutdown request failed or proxy was already stopped.")
             request_server_shutdown(server)
             break
 

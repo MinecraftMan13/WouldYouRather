@@ -29,6 +29,7 @@ QUESTIONS_FILE = "questions.json"
 IP_LOG_FILE    = "ip_log.json"
 LOBBIES_FILE   = "lobbies.json"
 USER_VOTES_FILE = "user_votes.json"
+VISITORS_FILE = "visitors.json"
 
 
 def load_lobbies():
@@ -41,6 +42,18 @@ def load_lobbies():
 def save_lobbies(lobbies):
     with open(LOBBIES_FILE, "w") as f:
         json.dump(lobbies, f, indent=2)
+
+
+def load_visitors():
+    if not os.path.exists(VISITORS_FILE):
+        return {}
+    with open(VISITORS_FILE, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def save_visitors(visitors):
+    with open(VISITORS_FILE, "w", encoding="utf-8") as f:
+        json.dump(visitors, f, indent=2)
 
 
 def generate_lobby_id():
@@ -208,6 +221,43 @@ def get_client_ip():
         return forwarded_for.split(",")[0].strip()
     return request.remote_addr
 
+
+def record_visitor(ip, path):
+    if not ip:
+        return
+
+    visitors = load_visitors()
+    now = time.time()
+    visitor = visitors.get(ip, {
+        "ip": ip,
+        "first_seen": now,
+        "last_seen": now,
+        "visit_count": 0,
+        "banned": False
+    })
+    visitor["last_seen"] = now
+    visitor["visit_count"] = visitor.get("visit_count", 0) + 1
+    visitors[ip] = visitor
+    save_visitors(visitors)
+
+
+def is_banned_ip(ip):
+    if not ip:
+        return False
+    visitors = load_visitors()
+    return visitors.get(ip, {}).get("banned", False) is True
+
+
+def prepare_visitors_for_admin(visitors):
+    prepared = []
+    for ip, info in visitors.items():
+        visitor = dict(info)
+        visitor["ip"] = ip
+        visitor["first_seen_str"] = format_timestamp(visitor.get("first_seen", time.time()))
+        visitor["last_seen_str"] = format_timestamp(visitor.get("last_seen", time.time()))
+        prepared.append(visitor)
+    return sorted(prepared, key=lambda visitor: visitor.get("last_seen", 0), reverse=True)
+
 def has_voted(ip, question_id):
     ip_log = load_ip_log()
     return question_id in ip_log.get(ip, [])
@@ -250,6 +300,23 @@ def is_logged_in():
     We set session["admin"] = True on successful login.
     """
     return session.get("admin") is True
+
+
+@app.before_request
+def track_and_block_visitors():
+    if request.endpoint == "static":
+        return None
+
+    if request.path.startswith("/admin"):
+        return None
+
+    ip = get_client_ip()
+    record_visitor(ip, request.path)
+
+    if is_banned_ip(ip):
+        return Response("Your IP has been banned from this site.", status=403, mimetype="text/plain")
+
+    return None
 
 
 # -----------------------------------------------
@@ -665,6 +732,7 @@ def submit():
     if request.method == "POST":
         option_a = request.form.get("option_a", "").strip()
         option_b = request.form.get("option_b", "").strip()
+        submitter_ip = get_client_ip()
 
         if not option_a or not option_b:
             return render_template("submit.html", error="Both options are required.")
@@ -679,7 +747,8 @@ def submit():
             "option_b": option_b,
             "votes_a":  0,
             "votes_b":  0,
-            "pending":  True
+            "pending":  True,
+            "submitter_ip": submitter_ip
         }
 
         questions.append(new_question)
@@ -729,12 +798,14 @@ def admin_dashboard():
     pending = [q for q in questions if q.get("pending", False)]
     question_map = {q["id"]: q for q in questions}
     sorted_lobbies = prepare_lobbies_for_admin(lobbies, question_map)
+    visitors = prepare_visitors_for_admin(load_visitors())
 
     new_lobby = request.args.get("new_lobby")
     active_tab = request.args.get("tab", "questions")
     return render_template("admin.html", view="dashboard",
                            questions=live, pending=pending,
                            lobbies=sorted_lobbies,
+                           visitors=visitors,
                            new_lobby=new_lobby,
                            active_tab=active_tab)
 
@@ -756,9 +827,11 @@ def admin_add():
         save_lobbies(lobbies)
         question_map = {q["id"]: q for q in questions}
         sorted_lobbies = prepare_lobbies_for_admin(lobbies, question_map)
+        visitors = prepare_visitors_for_admin(load_visitors())
         return render_template("admin.html", view="dashboard",
                                questions=live, pending=pending,
                                lobbies=sorted_lobbies,
+                               visitors=visitors,
                                active_tab="questions",
                                error="Both options are required.")
 
@@ -816,9 +889,11 @@ def admin_add_lobby():
     cleanup_lobbies(lobbies)
     save_lobbies(lobbies)
     sorted_lobbies = prepare_lobbies_for_admin(lobbies, question_map)
+    visitors = prepare_visitors_for_admin(load_visitors())
     return render_template("admin.html", view="dashboard",
                            questions=live, pending=pending,
                            lobbies=sorted_lobbies,
+                           visitors=visitors,
                            active_tab="lobbies",
                            error=error)
 
@@ -835,6 +910,45 @@ def admin_delete_lobby():
         save_lobbies(lobbies)
 
     return redirect(url_for("admin_dashboard", tab="lobbies"))
+
+
+@app.route("/admin/ban-ip", methods=["POST"])
+def admin_ban_ip():
+    if not is_logged_in():
+        return redirect(url_for("admin_login"))
+
+    ip = (request.form.get("ip") or "").strip()
+    if ip:
+        visitors = load_visitors()
+        now = time.time()
+        visitor = visitors.get(ip, {
+            "ip": ip,
+            "first_seen": now,
+            "last_seen": now,
+            "visit_count": 0,
+            "banned": False
+        })
+        visitor["banned"] = True
+        visitor["last_seen"] = visitor.get("last_seen", now)
+        visitors[ip] = visitor
+        save_visitors(visitors)
+
+    return redirect(url_for("admin_dashboard", tab="visitors"))
+
+
+@app.route("/admin/unban-ip", methods=["POST"])
+def admin_unban_ip():
+    if not is_logged_in():
+        return redirect(url_for("admin_login"))
+
+    ip = (request.form.get("ip") or "").strip()
+    if ip:
+        visitors = load_visitors()
+        if ip in visitors:
+            visitors[ip]["banned"] = False
+            save_visitors(visitors)
+
+    return redirect(url_for("admin_dashboard", tab="visitors"))
 
 
 @app.route("/admin/edit", methods=["POST"])

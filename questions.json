@@ -38,7 +38,7 @@
     "id": 6,
     "option_a": "Everything you eat tastes like feet",
     "option_b": "Everything you smell smells like food but you can never eat it",
-    "votes_a": 0,
+    "votes_a": 1,
     "votes_b": 0
   },
   {
@@ -453,5 +453,37 @@
     "option_b": "Only eat a gourmet meal that was clearly made by someone who hates flavor",
     "votes_a": 0,
     "votes_b": 0
+  },
+  {
+    "id": 66,
+    "option_a": "Poop in front of your crush",
+    "option_b": "Have your crush poop in front of you",
+    "votes_a": 0,
+    "votes_b": 0,
+    "pending": false
+  },
+  {
+    "id": 67,
+    "option_a": "Be able to talk to animals but they all hate you",
+    "option_b": "Never talk to animals but they all secretly love you",
+    "votes_a": 0,
+    "votes_b": 0,
+    "pending": false
+  },
+  {
+    "id": 68,
+    "option_a": "Have a mullet that grows back in 10 seconds every time you cut it",
+    "option_b": "Have to wear Crocs with socks forever",
+    "votes_a": 0,
+    "votes_b": 0,
+    "pending": false
+  },
+  {
+    "id": 69,
+    "option_a": "Accidentally send your nudes to your boss",
+    "option_b": "To your entire family group chat",
+    "votes_a": 0,
+    "votes_b": 0,
+    "pending": false
   }
 ]

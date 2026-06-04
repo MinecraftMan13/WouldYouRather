@@ -1,1 +1,26 @@
-{}
+{
+  "6HW9UH": {
+    "id": "6HW9UH",
+    "question_ids": [
+      45,
+      14,
+      42,
+      9,
+      15,
+      16,
+      35,
+      49,
+      32,
+      19
+    ],
+    "current_index": 0,
+    "players": {
+      "bbbb": {
+        "choice": null,
+        "joined_at": 1780551621.0017865,
+        "last_seen": 1780551621.0017865
+      }
+    },
+    "created_at": 1780551621.0017865
+  }
+}

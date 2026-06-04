@@ -94,7 +94,7 @@
     "id": 14,
     "option_a": "Only be able to walk sideways like a crab",
     "option_b": "Only be able to run, no walking, ever",
-    "votes_a": 0,
+    "votes_a": 1,
     "votes_b": 0
   },
   {
@@ -185,7 +185,7 @@
     "id": 27,
     "option_a": "Get matched with one sweaty tryhard named \"XxNoScopeDadxX\" every game",
     "option_b": "Get matched with one teammate who says \"trust me\" and immediately sells",
-    "votes_a": 0,
+    "votes_a": 1,
     "votes_b": 0
   },
   {
@@ -227,7 +227,7 @@
     "id": 33,
     "option_a": "Have a minimap that only shows your mistakes",
     "option_b": "Have a kill feed that says \"bro really?\" after every death",
-    "votes_a": 0,
+    "votes_a": 1,
     "votes_b": 0
   },
   {
@@ -269,7 +269,7 @@
     "id": 39,
     "option_a": "Have your gamer tag appear in all caps when you win and lowercase when you lose",
     "option_b": "Have the game text you \"skill issue\" after every defeat",
-    "votes_a": 0,
+    "votes_a": 1,
     "votes_b": 0
   },
   {

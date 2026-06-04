@@ -382,7 +382,7 @@
         const status = document.createElement('div');
         const choice = players[name].choice;
         status.className = 'status-pill ' + (choice ? 'status-picked' : 'status-waiting');
-        status.textContent = choice ? `Picked ${choice.toUpperCase()}` : 'Waiting';
+        status.textContent = choice ? 'Picked' : 'Waiting';
         card.appendChild(label);
         card.appendChild(status);
         list.appendChild(card);

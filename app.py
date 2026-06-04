@@ -498,6 +498,10 @@ def is_logged_in():
     return session.get("admin") is True
 
 
+def get_lobby_session_key(lobby_id):
+    return f"challenge_nickname_{lobby_id}"
+
+
 @app.before_request
 def track_and_block_visitors():
     if request.endpoint == "static":
@@ -588,6 +592,7 @@ def create_challenge():
         **lobby_record
     }
     save_lobbies(lobbies)
+    session[get_lobby_session_key(lobby_id)] = nickname
     return redirect(url_for("challenge", lobby_id=lobby_id, nickname=nickname))
 
 
@@ -602,6 +607,7 @@ def leave_lobby(lobby_id):
         del lobby["players"][nickname]
         refresh_lobby_state(lobby)
         save_lobbies(lobbies)
+    session.pop(get_lobby_session_key(lobby_id), None)
     return redirect(url_for("index"))
 
 
@@ -615,11 +621,18 @@ def challenge(lobby_id):
         return redirect(url_for("index"))
 
     nickname = sanitize_nickname(request.args.get("nickname", ""))
+    owned_nickname = session.get(get_lobby_session_key(lobby_id))
     if not nickname:
         return render_template("challenge.html", join_only=True,
                                lobby_id=lobby_id,
                                players=lobby.get("players", {}),
                                error=None)
+
+    if nickname in lobby["players"] and owned_nickname != nickname:
+        return render_template("challenge.html", join_only=True,
+                               lobby_id=lobby_id,
+                               players=lobby.get("players", {}),
+                               error="That nickname is already in this lobby. Please choose a different one.")
 
     if nickname not in lobby["players"]:
         if len(lobby["players"]) >= 2:
@@ -632,6 +645,7 @@ def challenge(lobby_id):
         set_timestamp_fields(lobby["players"][nickname], "joined_at", now)
         set_timestamp_fields(lobby["players"][nickname], "last_seen", now)
 
+    session[get_lobby_session_key(lobby_id)] = nickname
     update_player_timestamp(lobby["players"][nickname])
     save_lobbies(lobbies)
 
@@ -1273,7 +1287,7 @@ def wait_for_close_command(server):
 if __name__ == "__main__":
     print(f"Running on http://{APP_HOST}:{APP_PORT}")
     print("Type close to stop server")
-    server = create_server(app, host=APP_HOST, port=APP_PORT, threads=12)
+    server = create_server(app, host=APP_HOST, port=APP_PORT, threads=16)
     patch_server_pull_trigger(server)
     threading.Thread(target=wait_for_close_command, args=(server,), daemon=True).start()
     server.run()

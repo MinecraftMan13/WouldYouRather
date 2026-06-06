@@ -80,7 +80,7 @@
     "id": 12,
     "option_a": "Only be able to eat food off the floor like a dog",
     "option_b": "Only be able to drink through your nose",
-    "votes_a": 0,
+    "votes_a": 1,
     "votes_b": 0
   },
   {
@@ -115,7 +115,7 @@
     "id": 17,
     "option_a": "Only be able to text in pirate speak",
     "option_b": "Only be able to speak in rhymes out loud",
-    "votes_a": 0,
+    "votes_a": 1,
     "votes_b": 0
   },
   {
@@ -297,7 +297,7 @@
     "id": 43,
     "option_a": "Only get invited to lobbies that are already doomed",
     "option_b": "Only get invited to lobbies where one friend is definitely AFK",
-    "votes_a": 0,
+    "votes_a": 1,
     "votes_b": 0
   },
   {
@@ -381,7 +381,7 @@
     "id": 55,
     "option_a": "Have to drink your coffee with a whole raw onion floating in it",
     "option_b": "Have to eat your ramen with marshmallows mixed in",
-    "votes_a": 0,
+    "votes_a": 1,
     "votes_b": 0
   },
   {

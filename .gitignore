@@ -17,6 +17,7 @@ __pycache__/
 *.pyc
 build/
 dist/
+ffmpeg/
 
 # VS Code settings (optional — some people commit these, personal preference)
 .vscode/

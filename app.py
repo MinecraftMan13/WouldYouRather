@@ -151,11 +151,34 @@ def save_lobbies(lobbies):
 
 
 def load_visitors():
-    return load_json_file(VISITORS_FILE, {})
+    visitors = load_json_file(VISITORS_FILE, {})
+    if normalize_visitor_timestamps(visitors):
+        save_visitors(visitors)
+    return visitors
 
 
 def save_visitors(visitors):
     save_json_file(VISITORS_FILE, visitors)
+
+
+def normalize_visitor_timestamps(visitors):
+    changed = False
+    for ip, info in visitors.items():
+        if info.get("ip") != ip:
+            info["ip"] = ip
+            changed = True
+
+        first_seen = info.get("first_seen")
+        if first_seen is not None and not info.get("first_seen_eastern"):
+            info["first_seen_eastern"] = format_timestamp_eastern(first_seen)
+            changed = True
+
+        last_seen = info.get("last_seen")
+        if last_seen is not None and not info.get("last_seen_eastern"):
+            info["last_seen_eastern"] = format_timestamp_eastern(last_seen)
+            changed = True
+
+    return changed
 
 
 def generate_lobby_id():
@@ -447,12 +470,12 @@ def record_visitor(ip, path):
     now = time.time()
     visitor = visitors.get(ip, {
         "ip": ip,
-        "first_seen": now,
-        "last_seen": now,
         "visit_count": 0,
         "banned": False
     })
-    visitor["last_seen"] = now
+    if "first_seen" not in visitor:
+        set_timestamp_fields(visitor, "first_seen", now)
+    set_timestamp_fields(visitor, "last_seen", now)
     visitor["visit_count"] = visitor.get("visit_count", 0) + 1
     visitors[ip] = visitor
     save_visitors(visitors)
@@ -470,8 +493,12 @@ def prepare_visitors_for_admin(visitors):
     for ip, info in visitors.items():
         visitor = dict(info)
         visitor["ip"] = ip
-        visitor["first_seen_str"] = format_timestamp(visitor.get("first_seen", time.time()))
-        visitor["last_seen_str"] = format_timestamp(visitor.get("last_seen", time.time()))
+        visitor["first_seen_str"] = visitor.get("first_seen_eastern") or format_timestamp_eastern(
+            visitor.get("first_seen", time.time())
+        )
+        visitor["last_seen_str"] = visitor.get("last_seen_eastern") or format_timestamp_eastern(
+            visitor.get("last_seen", time.time())
+        )
         prepared.append(visitor)
     return sorted(prepared, key=lambda visitor: visitor.get("last_seen", 0), reverse=True)
 
@@ -1257,13 +1284,14 @@ def admin_ban_ip():
         now = time.time()
         visitor = visitors.get(ip, {
             "ip": ip,
-            "first_seen": now,
-            "last_seen": now,
             "visit_count": 0,
             "banned": False
         })
+        if "first_seen" not in visitor:
+            set_timestamp_fields(visitor, "first_seen", now)
+        if "last_seen" not in visitor:
+            set_timestamp_fields(visitor, "last_seen", now)
         visitor["banned"] = True
-        visitor["last_seen"] = visitor.get("last_seen", now)
         visitors[ip] = visitor
         save_visitors(visitors)
 

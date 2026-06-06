@@ -17,7 +17,7 @@
     "id": 3,
     "option_a": "Have a laugh that sounds exactly like a goat",
     "option_b": "Sneeze so hard you do a backflip every time",
-    "votes_a": 0,
+    "votes_a": 1,
     "votes_b": 0
   },
   {
@@ -73,7 +73,7 @@
     "id": 11,
     "option_a": "Always have wet socks",
     "option_b": "Always have a popcorn kernel stuck in your teeth",
-    "votes_a": 1,
+    "votes_a": 2,
     "votes_b": 0
   },
   {
@@ -206,7 +206,7 @@
     "id": 30,
     "option_a": "Main a character everyone calls \"bad\" but you are weirdly cracked with",
     "option_b": "Main the top-tier character and still get diffed by toddlers",
-    "votes_a": 0,
+    "votes_a": 1,
     "votes_b": 0
   },
   {
@@ -466,7 +466,7 @@
     "id": 67,
     "option_a": "Be able to talk to animals but they all hate you",
     "option_b": "Never talk to animals but they all secretly love you",
-    "votes_a": 0,
+    "votes_a": 1,
     "votes_b": 0,
     "pending": false
   },

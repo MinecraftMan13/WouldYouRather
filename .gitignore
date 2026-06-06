@@ -11,6 +11,7 @@ user_votes.json
 visitors.json
 lobbies.json
 discord_votes.json
+questions.json
 
 __pycache__/
 *.pyc

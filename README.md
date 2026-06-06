@@ -1,17 +1,24 @@
-# WouldYouRather Setup Guide
+# WouldYouRather
 
-## 1. Install Tailscale first
+This project includes three main pieces:
 
-This project is easiest to run safely over a private network. Install Tailscale on the host machine and join your Tailnet before you start the app.
+- `app.py`: the Flask website and admin dashboard
+- `proxy_server.py`: a lightweight local proxy
+- `discordbot.py`: the Discord bot for questions, memes, and music
 
-Why?
-- The app and proxy are meant to run locally.
-- Tailscale lets you access the service without exposing your home/public IP.
-- If you want the Discord bot or remote users to access the website, use a Tailscale address.
+## Requirements
 
-## 2. Create a virtual environment and install dependencies
+- Windows with Python 3.11+
+- A Discord bot token if you want to run the bot
+- `ffmpeg.exe` available at `ffmpeg\bin\ffmpeg.exe` or on your `PATH` for music playback
 
-Open PowerShell in the project folder and run:
+Tailscale is optional. It is useful if you want to reach the site privately from other devices without exposing it publicly.
+
+## Setup
+
+### 1. Create a virtual environment
+
+PowerShell:
 
 ```powershell
 python -m venv .venv
@@ -20,7 +27,7 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-If you prefer Command Prompt:
+Command Prompt:
 
 ```cmd
 python -m venv .venv
@@ -29,83 +36,42 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-## 2.1 Quick start commands (Windows)
+### 2. Create `.env`
 
-After installing dependencies, use these commands to prepare the JSON files and start the services.
-
-### Create empty JSON files in PowerShell
-
-```powershell
-'{}' | Out-File -Encoding utf8 user_votes.json
-'{}' | Out-File -Encoding utf8 discord_votes.json
-'{}' | Out-File -Encoding utf8 visitors.json
-'{}' | Out-File -Encoding utf8 lobbies.json
-'[]' | Out-File -Encoding utf8 questions.json
-```
-
-### Create empty JSON files in Command Prompt
-
-```cmd
-echo {}> user_votes.json
-echo {}> discord_votes.json
-echo {}> visitors.json
-echo {}> lobbies.json
-echo []> questions.json
-```
-
-> Replace the content of `questions.json` with a real question list after setup.
-
-## 3. Add environment variables
-
-This project uses a `.env` file. Create a file named `.env` in the project root and add at least the following values:
+Create a `.env` file in the project root:
 
 ```env
-SECRET_KEY=some_random_secret_value
-ADMIN_USERNAME=your_admin_username
-ADMIN_PASSWORD=your_admin_password
-DISCORD_BOT_TOKEN=your_discord_bot_token
-DISCORD_BOT_API_KEY=your_api_key_for_discord_bot
-```
-
-Optional settings you can also include:
-
-```env
+SECRET_KEY=replace_with_a_random_secret
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=replace_with_a_password
+DISCORD_BOT_TOKEN=replace_with_your_discord_bot_token
+DISCORD_BOT_API_KEY=replace_with_a_shared_api_key
+WEBSITE_API_URL=http://127.0.0.1:5000
 APP_HOST=127.0.0.1
 APP_PORT=5000
 PROXY_HOST=127.0.0.1
 PROXY_PORT=8080
-WEBSITE_API_URL=http://127.0.0.1:5000
 ```
 
-If you are using Tailscale and want the website accessible over your Tailnet, set `WEBSITE_API_URL` to the Tailscale address, for example:
+Notes:
 
-```env
-WEBSITE_API_URL=http://100.x.x.x:5000
-```
+- `DISCORD_BOT_API_KEY` must match between the website and the Discord bot.
+- `WEBSITE_API_URL` should point to the Flask app, not the proxy.
+- If you want Tailnet access, you can change `APP_HOST` and `WEBSITE_API_URL` to match your Tailscale setup.
 
-> If you want remote access through Tailscale, you may also need `APP_HOST=0.0.0.0` or configure your proxy to bind to the correct address.
+### 3. JSON data files
 
-## 4. Create the JSON files
+The app uses these files in the project root:
 
-These files are not included in GitHub because they can contain private data such as IP addresses.
-
-Create these files in the project root if they do not already exist:
-
+- `questions.json`
 - `user_votes.json`
 - `discord_votes.json`
 - `visitors.json`
 - `lobbies.json`
-- `questions.json`
 
-### Minimal starter content
+Recommended starter contents:
 
-For the vote/history files, use empty JSON objects:
-
-```json
-{}
-```
-
-For `questions.json`, use an array. Here is a minimal example:
+`questions.json`
 
 ```json
 [
@@ -119,27 +85,41 @@ For `questions.json`, use an array. Here is a minimal example:
 ]
 ```
 
-You can also copy the existing `questions.json` file from this repo if you already have it locally.
+`user_votes.json`
 
-## 5. Run the app
+```json
+{}
+```
 
-There are three main components:
+`discord_votes.json`
 
-- `app.py` — the Flask website backend
-- `proxy_server.py` — the proxy server that forwards requests
-- `discordbot.py` — the Discord bot
+```json
+{}
+```
 
-### Option A: Run the GUI launcher
+`visitors.json`
 
-If you want to start everything from the local GUI:
+```json
+{}
+```
+
+`lobbies.json`
+
+```json
+{}
+```
+
+## Running The Project
+
+### Option A: GUI launcher
 
 ```powershell
 python launcher_gui.py
 ```
 
-### Option B: Start manually
+### Option B: start each service manually
 
-In separate terminals, run:
+In separate terminals:
 
 ```powershell
 python app.py
@@ -147,26 +127,76 @@ python proxy_server.py
 python discordbot.py
 ```
 
-## 6. Notes
+The Flask app defaults to `http://127.0.0.1:5000`.
 
-- The app uses `python-dotenv` to load `.env`.
-- `questions.json` should contain your question pool.
-- `user_votes.json`, `discord_votes.json`, `visitors.json`, and `lobbies.json` can start as empty objects and will be updated by the app.
-- Keep the `.env` file and these JSON files out of version control.
+## Features
 
-## 7. Example `.gitignore`
+### Website
 
-Add these lines to `.gitignore` if you do not want those files committed:
+- Random Would You Rather voting
+- Vote history page
+- Question submission flow
+- Admin dashboard
+- Visitor tracking
+- Challenge lobbies with live status updates
 
+### Discord bot
+
+Commands currently available:
+
+- `!wouldyourather`
+- `!meme`
+- `!play <youtube_url>`
+- `!showmusic`
+- `!stopmusic`
+- `!resetvotes`
+- `!commands`
+
+Music notes:
+
+- The user must be in the Discord voice channel named `Bot-Music`
+- Only YouTube URLs are accepted
+- Music playback depends on `yt-dlp`, `PyNaCl`, and FFmpeg
+
+## Tailscale And Remote Access
+
+You do not need Tailscale for local use.
+
+If you want private remote access:
+
+1. Install Tailscale on the host machine
+2. Join your Tailnet
+3. Point `WEBSITE_API_URL` at the Flask app address reachable from the bot or your other devices
+
+Example:
+
+```env
+WEBSITE_API_URL=http://100.x.x.x:5000
 ```
+
+Depending on your setup, you may also need:
+
+```env
+APP_HOST=0.0.0.0
+```
+
+## Troubleshooting
+
+- If the bot cannot answer website-backed commands, verify `WEBSITE_API_URL` and `DISCORD_BOT_API_KEY`.
+- If Discord music fails, verify `ffmpeg\bin\ffmpeg.exe` exists or that `ffmpeg` is on `PATH`.
+- If the bot cannot join voice, confirm the channel is named `Bot-Music`.
+- If the app looks broken after editing a JSON file, make sure objects use `{}` and question lists use `[]`.
+- If remote devices cannot connect, check your host/port settings and any Tailscale or firewall rules.
+
+## Git Ignore
+
+These should normally stay out of version control:
+
+```gitignore
 .env
-*.json
 .venv/
+user_votes.json
+discord_votes.json
+visitors.json
+lobbies.json
 ```
-
-## 8. Troubleshooting
-
-- If the Discord bot cannot connect, verify `DISCORD_BOT_TOKEN` and `DISCORD_BOT_API_KEY`.
-- If the website does not load from Tailscale, verify that the host and port match `WEBSITE_API_URL`.
-- If a JSON file is missing or malformed, the app may fail to start. Use `{}` for empty objects and `[]` for empty lists.
-- You can also add me on discord @Hackerpro13 for support if needed.

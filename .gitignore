@@ -10,7 +10,7 @@ ip_log.json
 user_votes.json
 visitors.json
 lobbies.json
-
+discord_votes.json
 
 __pycache__/
 *.pyc

@@ -8,6 +8,7 @@ import ipaddress
 import tempfile
 import http.client
 import datetime
+import hmac
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, Response
 from dotenv import load_dotenv
@@ -29,11 +30,13 @@ load_dotenv()
 app.secret_key = os.getenv("SECRET_KEY")
 ADMIN_USERNAME  = os.getenv("ADMIN_USERNAME")
 ADMIN_PASSWORD  = os.getenv("ADMIN_PASSWORD")
+DISCORD_BOT_API_KEY = os.getenv("DISCORD_BOT_API_KEY")
 
 # File paths
 QUESTIONS_FILE = "questions.json"
 LOBBIES_FILE   = "lobbies.json"
 USER_VOTES_FILE = "user_votes.json"
+DISCORD_VOTES_FILE = "discord_votes.json"
 VISITORS_FILE = "visitors.json"
 APP_HOST = os.getenv("APP_HOST", "127.0.0.1")
 APP_PORT = int(os.getenv("APP_PORT", "5000"))
@@ -42,6 +45,7 @@ PROXY_PORT = int(os.getenv("PROXY_PORT", "8080"))
 json_decoder = json.JSONDecoder()
 json_file_locks = {}
 json_file_locks_guard = threading.Lock()
+vote_operation_lock = threading.Lock()
 
 try:
     EASTERN_TZ = ZoneInfo("America/Indiana/Indianapolis")
@@ -352,6 +356,35 @@ def load_user_votes():
 
 def save_user_votes(data):
     save_json_file(USER_VOTES_FILE, data)
+
+
+def load_discord_votes():
+    return load_json_file(DISCORD_VOTES_FILE, {})
+
+
+def save_discord_votes(data):
+    save_json_file(DISCORD_VOTES_FILE, data)
+
+
+def discord_api_authorized():
+    provided_key = request.headers.get("X-Discord-Bot-Key", "")
+    return bool(
+        DISCORD_BOT_API_KEY
+        and hmac.compare_digest(provided_key, DISCORD_BOT_API_KEY)
+    )
+
+
+def question_vote_result(question):
+    votes_a = question.get("votes_a", 0)
+    votes_b = question.get("votes_b", 0)
+    total = votes_a + votes_b
+    return {
+        "votes_a": votes_a,
+        "votes_b": votes_b,
+        "percent_a": round((votes_a / total) * 100) if total else 0,
+        "percent_b": round((votes_b / total) * 100) if total else 0,
+    }
+
 
 def is_loopback_address(value):
     try:
@@ -743,6 +776,99 @@ def challenge_next(lobby_id):
 
     save_lobbies(lobbies)
     return jsonify({"finished": get_lobby_question(lobby) is None})
+
+
+@app.route("/api/discord/question")
+def discord_random_question():
+    if not discord_api_authorized():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    questions = [q for q in load_questions() if not q.get("pending", False)]
+    if not questions:
+        return jsonify({"error": "No approved questions are available"}), 404
+
+    question = random.choice(questions)
+    return jsonify({
+        "id": question["id"],
+        "option_a": question["option_a"],
+        "option_b": question["option_b"],
+        **question_vote_result(question),
+    })
+
+
+@app.route("/api/discord/vote", methods=["POST"])
+def discord_vote():
+    if not discord_api_authorized():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.json or {}
+    question_id = data.get("question_id")
+    choice = data.get("choice")
+    user_id = str(data.get("user_id", "")).strip()
+    username = str(data.get("username", "")).strip()[:100]
+    display_name = str(data.get("display_name", "")).strip()[:100]
+
+    if not isinstance(question_id, int) or choice not in ("a", "b") or not user_id:
+        return jsonify({"error": "question_id, user_id, and choice are required"}), 400
+
+    with vote_operation_lock:
+        discord_votes = load_discord_votes()
+        user_votes = discord_votes.setdefault(user_id, {})
+        question_key = str(question_id)
+        if question_key in user_votes:
+            existing_vote = user_votes[question_key]
+            if isinstance(existing_vote, str):
+                existing_vote = {"choice": existing_vote}
+                user_votes[question_key] = existing_vote
+            if username:
+                existing_vote["discord_username"] = username
+            if display_name:
+                existing_vote["discord_display_name"] = display_name
+            save_discord_votes(discord_votes)
+
+            questions = load_questions()
+            question = next((q for q in questions if q["id"] == question_id), None)
+            if not question:
+                return jsonify({"error": "Question not found"}), 404
+            return jsonify({"already_voted": True, **question_vote_result(question)})
+
+        questions = load_questions()
+        question = next(
+            (q for q in questions if q["id"] == question_id and not q.get("pending", False)),
+            None,
+        )
+        if not question:
+            return jsonify({"error": "Question not found"}), 404
+
+        vote_field = "votes_a" if choice == "a" else "votes_b"
+        question[vote_field] = question.get(vote_field, 0) + 1
+        now = time.time()
+        user_votes[question_key] = {
+            "choice": choice,
+            "discord_username": username,
+            "discord_display_name": display_name,
+            "ts": now,
+            "ts_eastern": format_timestamp_eastern(now),
+        }
+        save_questions(questions)
+        save_discord_votes(discord_votes)
+
+    voted_text = question["option_a"] if choice == "a" else question["option_b"]
+    push_vote_event(voted_text)
+    return jsonify({"already_voted": False, **question_vote_result(question)})
+
+
+@app.route("/api/discord/reset-votes", methods=["POST"])
+def discord_reset_votes():
+    if not discord_api_authorized():
+        return jsonify({"error": "Unauthorized"}), 401
+
+    data = request.json or {}
+    if data.get("username") != "hackerpro13":
+        return jsonify({"error": "Only hackerpro13 can reset Discord votes"}), 403
+
+    save_discord_votes({})
+    return jsonify({"ok": True})
 
 
 @app.route("/vote", methods=["POST"])

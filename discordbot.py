@@ -10,6 +10,7 @@ load_dotenv()
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 DISCORD_BOT_API_KEY = os.getenv("DISCORD_BOT_API_KEY")
 WEBSITE_API_URL = os.getenv("WEBSITE_API_URL", "http://127.0.0.1:5000").rstrip("/")
+MEME_SOURCE_URL = "https://meme-api.com/gimme"
 
 
 def option_label(prefix, text):
@@ -33,7 +34,10 @@ def question_embed(question):
 class WouldYouRatherBot(commands.Bot):
     async def setup_hook(self):
         self.http_session = aiohttp.ClientSession(
-            headers={"X-Discord-Bot-Key": DISCORD_BOT_API_KEY or ""}
+            headers={
+                "X-Discord-Bot-Key": DISCORD_BOT_API_KEY or "",
+                "User-Agent": "WouldYouRatherDiscordBot/1.0",
+            }
         )
 
     async def close(self):
@@ -48,6 +52,28 @@ class WouldYouRatherBot(commands.Bot):
             if response.status >= 400:
                 raise RuntimeError(data.get("error", f"Website returned {response.status}"))
             return data
+
+    async def fetch_random_meme(self):
+        async with self.http_session.get(
+            MEME_SOURCE_URL,
+            timeout=aiohttp.ClientTimeout(total=10),
+        ) as response:
+            if response.status >= 400:
+                raise RuntimeError(f"Meme API returned {response.status}")
+
+            payload = await response.json()
+
+        image_url = payload.get("url")
+        if not image_url:
+            raise RuntimeError("No meme image was returned")
+
+        return {
+            "title": payload.get("title", "Random Meme"),
+            "image_url": image_url,
+            "post_url": payload.get("postLink") or payload.get("preview") or image_url,
+            "subreddit": payload.get("subreddit", "memes"),
+            "author": payload.get("author", "unknown"),
+        }
 
 
 class VoteButton(discord.ui.Button):
@@ -118,6 +144,56 @@ async def wouldyourather(ctx):
         return
 
     await ctx.send(embed=question_embed(question), view=VoteView(question))
+
+
+@bot.command()
+async def commands(ctx):
+    """Show all available bot commands."""
+    embed = discord.Embed(
+        title="Available Commands",
+        description="Here are the commands you can use with this bot:",
+        color=discord.Color.blurple(),
+    )
+    embed.add_field(
+        name="!wouldyourather",
+        value="Post a random Would You Rather question.",
+        inline=False,
+    )
+    embed.add_field(
+        name="!resetvotes",
+        value="Clear Discord vote history for the bot owner.",
+        inline=False,
+    )
+    embed.add_field(
+        name="!meme",
+        value="Pull a random meme from the internet.",
+        inline=False,
+    )
+    embed.add_field(
+        name="!commands",
+        value="Show this command list.",
+        inline=False,
+    )
+    await ctx.send(embed=embed)
+
+
+@bot.command()
+async def meme(ctx):
+    """Pull a random meme from a public meme API."""
+    try:
+        meme = await bot.fetch_random_meme()
+    except (aiohttp.ClientError, RuntimeError, KeyError, IndexError, TypeError) as exc:
+        await ctx.send(f"Could not fetch a meme right now: {exc}")
+        return
+
+    embed = discord.Embed(
+        title=meme["title"][:256],
+        url=meme["post_url"],
+        color=discord.Color.orange(),
+    )
+    embed.set_image(url=meme["image_url"])
+    embed.set_footer(text=f"r/{meme['subreddit']} • by u/{meme['author']}")
+    await ctx.send(embed=embed)
 
 
 @bot.command()

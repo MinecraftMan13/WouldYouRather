@@ -1359,6 +1359,19 @@ def admin_ban_ip():
 
     ip = (request.form.get("ip") or "").strip()
     if ip:
+        visitors = load_visitors()
+        now = time.time()
+        visitor = visitors.get(ip, {
+            "ip": ip,
+            "visit_count": 0
+        })
+        if "first_seen" not in visitor:
+            set_timestamp_fields(visitor, "first_seen", now)
+        if "last_seen" not in visitor:
+            set_timestamp_fields(visitor, "last_seen", now)
+        visitors[ip] = visitor
+        save_visitors(visitors)
+
         banned_ips = set(load_banned_ips())
         banned_ips.add(ip)
         save_banned_ips(list(banned_ips))
@@ -1386,7 +1399,13 @@ def admin_clear_visitors():
     if not is_logged_in():
         return redirect(url_for("admin_login"))
 
-    save_visitors({})
+    visitors = load_visitors()
+    banned_ip_set = set(load_banned_ips())
+    preserved_visitors = {
+        ip: info for ip, info in visitors.items()
+        if ip in banned_ip_set
+    }
+    save_visitors(preserved_visitors)
 
     return redirect(url_for("admin_dashboard", tab="visitors"))
 

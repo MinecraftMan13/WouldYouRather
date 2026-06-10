@@ -162,6 +162,43 @@
       width: 100%;
     }
 
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 0.95rem 1.1rem;
+      border: 1px solid transparent;
+      border-radius: 12px;
+      cursor: pointer;
+      font-family: 'Karla', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: transform var(--transition), border-color var(--transition), box-shadow var(--transition), background var(--transition);
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn-success {
+      color: var(--text);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0)),
+        linear-gradient(135deg, #1f2937, #111827);
+      border-color: #374151;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.32);
+    }
+
+    .btn-success:hover {
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0)),
+        linear-gradient(135deg, #273244, #0f172a);
+      border-color: #4b5563;
+      box-shadow: 0 16px 34px rgba(0,0,0,0.38);
+    }
+
     /* -----------------------------------------------
        CARD
     ----------------------------------------------- */

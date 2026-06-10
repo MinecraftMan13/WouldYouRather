@@ -697,7 +697,7 @@
     <div id="tab-lobbies" style="{% if active_tab == 'lobbies' %}display:block;{% else %}display:none;{% endif %}">
       <div class="card add-card">
         <h2>🔧 Lobby Management</h2>
-        <p class="pending-subtitle">Create a new lobby manually or delete an existing one.</p>
+        <p class="pending-subtitle">Create a new lobby manually or delete an existing one. New lobbies now use half of the live question pool.</p>
 
         {% if new_lobby %}
           <div class="pending-count" style="background: rgba(34,197,94,0.2); color: var(--success);">
@@ -727,6 +727,7 @@
               <th style="width:90px">ID</th>
               <th>Host</th>
               <th>Players</th>
+              <th>Questions</th>
               <th>Current Question</th>
               <th>Created</th>
               <th>Actions</th>
@@ -739,6 +740,7 @@
                 <td><span class="id-badge">{{ lobby.id }}</span></td>
                 <td>{{ lobby.host }}</td>
                 <td>{{ lobby.players | length }}</td>
+                <td>{{ lobby.question_count }}</td>
                 <td>
                   {% if lobby.current_question %}
                     <span>{{ lobby.current_question.option_a }}</span>
@@ -762,7 +764,7 @@
               {% endfor %}
             {% else %}
               <tr>
-                <td colspan="6" class="pending-empty">No active lobbies.</td>
+                <td colspan="7" class="pending-empty">No active lobbies.</td>
               </tr>
             {% endif %}
           </tbody>

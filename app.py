@@ -139,9 +139,50 @@ def normalize_lobby_timestamps(lobbies):
     return changed
 
 
+def get_lobby_question_target_count(live_questions):
+    if not live_questions:
+        return 0
+    return max(1, (len(live_questions) + 1) // 2)
+
+
+def build_lobby_question_ids(live_questions):
+    question_ids = [q["id"] for q in live_questions]
+    random.shuffle(question_ids)
+    return question_ids[:get_lobby_question_target_count(live_questions)]
+
+
 def load_lobbies():
     lobbies = load_json_file(LOBBIES_FILE, {})
-    if normalize_lobby_timestamps(lobbies):
+    live_questions = [q for q in load_questions() if not q.get("pending", False)]
+    target_count = get_lobby_question_target_count(live_questions)
+    live_question_ids = [q["id"] for q in live_questions]
+    changed = normalize_lobby_timestamps(lobbies)
+    for lobby in lobbies.values():
+        question_ids = lobby.get("question_ids", [])
+        if not target_count:
+            continue
+
+        normalized_ids = []
+        for question_id in question_ids:
+            if question_id in live_question_ids and question_id not in normalized_ids:
+                normalized_ids.append(question_id)
+
+        if len(normalized_ids) < target_count:
+            remaining_ids = [question_id for question_id in live_question_ids if question_id not in normalized_ids]
+            random.shuffle(remaining_ids)
+            normalized_ids.extend(remaining_ids[:target_count - len(normalized_ids)])
+
+        if len(normalized_ids) > target_count:
+            normalized_ids = normalized_ids[:target_count]
+
+        if normalized_ids != question_ids:
+            lobby["question_ids"] = normalized_ids
+            changed = True
+
+        if lobby.get("current_index", 0) >= len(lobby["question_ids"]):
+            lobby["current_index"] = max(0, len(lobby["question_ids"]) - 1)
+            changed = True
+    if changed:
         save_json_file(LOBBIES_FILE, lobbies)
     return lobbies
 
@@ -224,6 +265,7 @@ def prepare_lobbies_for_admin(lobbies, question_map):
         lobby_copy["host"] = host
         lobby_copy["current_question"] = current_question
         lobby_copy["created_at_str"] = format_timestamp(lobby.get("created_at", time.time()))
+        lobby_copy["question_count"] = len(question_ids)
         sorted_lobbies.append(lobby_copy)
     return sorted_lobbies
 
@@ -628,9 +670,7 @@ def create_challenge():
     if not live_questions:
         return redirect(url_for("index"))
 
-    question_ids = [q["id"] for q in live_questions]
-    random.shuffle(question_ids)
-    question_ids = question_ids[:10]
+    question_ids = build_lobby_question_ids(live_questions)
 
     lobby_id = generate_lobby_id()
     lobbies = load_lobbies()
@@ -1219,9 +1259,7 @@ def admin_add_lobby():
     elif not live_questions:
         error = "No live questions are available to seed a lobby."
     else:
-        question_ids = [q["id"] for q in live_questions]
-        random.shuffle(question_ids)
-        question_ids = question_ids[:10]
+        question_ids = build_lobby_question_ids(live_questions)
 
         lobby_id = generate_lobby_id()
         lobbies = load_lobbies()

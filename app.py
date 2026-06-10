@@ -38,6 +38,7 @@ LOBBIES_FILE   = "lobbies.json"
 USER_VOTES_FILE = "user_votes.json"
 DISCORD_VOTES_FILE = "discord_votes.json"
 VISITORS_FILE = "visitors.json"
+BANNED_FILE = "banned.json"
 APP_HOST = os.getenv("APP_HOST", "127.0.0.1")
 APP_PORT = int(os.getenv("APP_PORT", "5000"))
 PROXY_HOST = os.getenv("PROXY_HOST", "127.0.0.1")
@@ -193,13 +194,44 @@ def save_lobbies(lobbies):
 
 def load_visitors():
     visitors = load_json_file(VISITORS_FILE, {})
-    if normalize_visitor_timestamps(visitors):
+    changed = normalize_visitor_timestamps(visitors)
+    for info in visitors.values():
+        if "banned" in info:
+            del info["banned"]
+            changed = True
+    if changed:
         save_visitors(visitors)
     return visitors
 
 
 def save_visitors(visitors):
     save_json_file(VISITORS_FILE, visitors)
+
+
+def load_banned_ips():
+    banned_data = load_json_file(BANNED_FILE, [])
+    if isinstance(banned_data, dict):
+        banned_ips = banned_data.get("ips", [])
+    elif isinstance(banned_data, list):
+        banned_ips = banned_data
+    else:
+        banned_ips = []
+
+    visitors = load_json_file(VISITORS_FILE, {})
+    migrated = False
+    for ip, info in visitors.items():
+        if info.get("banned") is True and ip not in banned_ips:
+            banned_ips.append(ip)
+            migrated = True
+
+    normalized = sorted({str(ip).strip() for ip in banned_ips if str(ip).strip()})
+    if migrated or normalized != banned_data:
+        save_banned_ips(normalized)
+    return normalized
+
+
+def save_banned_ips(banned_ips):
+    save_json_file(BANNED_FILE, sorted({ip for ip in banned_ips if ip}))
 
 
 def normalize_visitor_timestamps(visitors):
@@ -512,8 +544,7 @@ def record_visitor(ip, path):
     now = time.time()
     visitor = visitors.get(ip, {
         "ip": ip,
-        "visit_count": 0,
-        "banned": False
+        "visit_count": 0
     })
     if "first_seen" not in visitor:
         set_timestamp_fields(visitor, "first_seen", now)
@@ -526,21 +557,31 @@ def record_visitor(ip, path):
 def is_banned_ip(ip):
     if not ip:
         return False
-    visitors = load_visitors()
-    return visitors.get(ip, {}).get("banned", False) is True
+    return ip in set(load_banned_ips())
 
 
-def prepare_visitors_for_admin(visitors):
+def prepare_visitors_for_admin(visitors, banned_ips):
     prepared = []
-    for ip, info in visitors.items():
+    banned_ip_set = set(banned_ips)
+    all_ips = sorted(set(visitors.keys()) | banned_ip_set)
+    for ip in all_ips:
+        info = visitors.get(ip, {})
         visitor = dict(info)
         visitor["ip"] = ip
-        visitor["first_seen_str"] = visitor.get("first_seen_eastern") or format_timestamp_eastern(
-            visitor.get("first_seen", time.time())
+        first_seen = visitor.get("first_seen")
+        last_seen = visitor.get("last_seen")
+        visitor["first_seen_str"] = (
+            visitor.get("first_seen_eastern")
+            or format_timestamp_eastern(first_seen)
+            if first_seen is not None else "Not recorded"
         )
-        visitor["last_seen_str"] = visitor.get("last_seen_eastern") or format_timestamp_eastern(
-            visitor.get("last_seen", time.time())
+        visitor["last_seen_str"] = (
+            visitor.get("last_seen_eastern")
+            or format_timestamp_eastern(last_seen)
+            if last_seen is not None else "Not recorded"
         )
+        visitor["visit_count"] = visitor.get("visit_count", 0)
+        visitor["banned"] = ip in banned_ip_set
         prepared.append(visitor)
     return sorted(prepared, key=lambda visitor: visitor.get("last_seen", 0), reverse=True)
 
@@ -1194,7 +1235,7 @@ def admin_dashboard():
     pending = [q for q in questions if q.get("pending", False)]
     question_map = {q["id"]: q for q in questions}
     sorted_lobbies = prepare_lobbies_for_admin(lobbies, question_map)
-    visitors = prepare_visitors_for_admin(load_visitors())
+    visitors = prepare_visitors_for_admin(load_visitors(), load_banned_ips())
 
     new_lobby = request.args.get("new_lobby")
     active_tab = request.args.get("tab", "questions")
@@ -1223,7 +1264,7 @@ def admin_add():
         save_lobbies(lobbies)
         question_map = {q["id"]: q for q in questions}
         sorted_lobbies = prepare_lobbies_for_admin(lobbies, question_map)
-        visitors = prepare_visitors_for_admin(load_visitors())
+        visitors = prepare_visitors_for_admin(load_visitors(), load_banned_ips())
         return render_template("admin.html", view="dashboard",
                                questions=live, pending=pending,
                                lobbies=sorted_lobbies,
@@ -1288,7 +1329,7 @@ def admin_add_lobby():
     cleanup_lobbies(lobbies)
     save_lobbies(lobbies)
     sorted_lobbies = prepare_lobbies_for_admin(lobbies, question_map)
-    visitors = prepare_visitors_for_admin(load_visitors())
+    visitors = prepare_visitors_for_admin(load_visitors(), load_banned_ips())
     return render_template("admin.html", view="dashboard",
                            questions=live, pending=pending,
                            lobbies=sorted_lobbies,
@@ -1318,20 +1359,9 @@ def admin_ban_ip():
 
     ip = (request.form.get("ip") or "").strip()
     if ip:
-        visitors = load_visitors()
-        now = time.time()
-        visitor = visitors.get(ip, {
-            "ip": ip,
-            "visit_count": 0,
-            "banned": False
-        })
-        if "first_seen" not in visitor:
-            set_timestamp_fields(visitor, "first_seen", now)
-        if "last_seen" not in visitor:
-            set_timestamp_fields(visitor, "last_seen", now)
-        visitor["banned"] = True
-        visitors[ip] = visitor
-        save_visitors(visitors)
+        banned_ips = set(load_banned_ips())
+        banned_ips.add(ip)
+        save_banned_ips(list(banned_ips))
 
     return redirect(url_for("admin_dashboard", tab="visitors"))
 
@@ -1343,10 +1373,20 @@ def admin_unban_ip():
 
     ip = (request.form.get("ip") or "").strip()
     if ip:
-        visitors = load_visitors()
-        if ip in visitors:
-            visitors[ip]["banned"] = False
-            save_visitors(visitors)
+        banned_ips = set(load_banned_ips())
+        if ip in banned_ips:
+            banned_ips.remove(ip)
+            save_banned_ips(list(banned_ips))
+
+    return redirect(url_for("admin_dashboard", tab="visitors"))
+
+
+@app.route("/admin/clear-visitors", methods=["POST"])
+def admin_clear_visitors():
+    if not is_logged_in():
+        return redirect(url_for("admin_login"))
+
+    save_visitors({})
 
     return redirect(url_for("admin_dashboard", tab="visitors"))
 

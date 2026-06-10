@@ -331,6 +331,21 @@
       margin-bottom: 1.4rem;
     }
 
+    .section-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.8rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.2rem;
+    }
+
+    .section-toolbar .pending-subtitle {
+      margin-bottom: 0;
+      flex: 1;
+      min-width: 220px;
+    }
+
     /* Badge showing how many are waiting */
     .pending-count {
       display: inline-block;
@@ -775,7 +790,12 @@
     <div id="tab-visitors" style="{% if active_tab == 'visitors' %}display:block;{% else %}display:none;{% endif %}">
       <div class="card table-card">
         <h2>Visitor IPs</h2>
-        <p class="pending-subtitle">Every public site visit is logged here. You can ban or unban IPs at any time.</p>
+        <div class="section-toolbar">
+          <p class="pending-subtitle">Every public site visit is logged here. You can ban or unban IPs at any time.</p>
+          <form method="POST" action="/admin/clear-visitors" onsubmit="return confirm('Clear all recorded visitor IPs? Banned IPs will stay in banned.json.')">
+            <button type="submit" class="btn btn-danger">Clear All IPs</button>
+          </form>
+        </div>
 
         <table>
           <thead>

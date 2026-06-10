@@ -67,6 +67,7 @@ The app uses these files in the project root:
 - `user_votes.json`
 - `discord_votes.json`
 - `visitors.json`
+- `banned.json`
 - `lobbies.json`
 
 Recommended starter contents:
@@ -101,6 +102,12 @@ Recommended starter contents:
 
 ```json
 {}
+```
+
+`banned.json`
+
+```json
+[]
 ```
 
 `lobbies.json`
@@ -198,5 +205,6 @@ These should normally stay out of version control:
 user_votes.json
 discord_votes.json
 visitors.json
+banned.json
 lobbies.json
 ```

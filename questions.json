@@ -192,7 +192,7 @@
     "id": 28,
     "option_a": "Have your loot always be common trash, but never get third partied",
     "option_b": "Get legendary loot every match, but only after you die for it",
-    "votes_a": 0,
+    "votes_a": 1,
     "votes_b": 0
   },
   {
@@ -220,7 +220,7 @@
     "id": 32,
     "option_a": "Spawn with a god-tier skin but aim like a goldfish",
     "option_b": "Spawn with default everything but somehow hit every shot",
-    "votes_a": 0,
+    "votes_a": 1,
     "votes_b": 0
   },
   {

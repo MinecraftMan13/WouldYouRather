@@ -204,6 +204,7 @@ These should normally stay out of version control:
 .venv/
 user_votes.json
 discord_votes.json
+lobbies.json
 visitors.json
 banned.json
 lobbies.json

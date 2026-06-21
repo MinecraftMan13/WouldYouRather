@@ -17,6 +17,7 @@ questions.json
 __pycache__/
 *.pyc
 build/
+legal/
 dist/
 ffmpeg/
 

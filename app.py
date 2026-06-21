@@ -10,7 +10,7 @@ import http.client
 import datetime
 import hmac
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for, Response
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, Response, send_from_directory
 from dotenv import load_dotenv
 from waitress.server import create_server
 
@@ -643,6 +643,21 @@ def is_logged_in():
 
 def get_lobby_session_key(lobby_id):
     return f"challenge_nickname_{lobby_id}"
+
+
+@app.route("/legal/privacy.html")
+def legal_privacy():
+    return send_from_directory("legal", "privacy.html")
+
+
+@app.route("/legal/terms.html")
+def legal_terms():
+    return send_from_directory("legal", "terms.html")
+
+
+@app.route("/legal/cookies.html")
+def legal_cookies():
+    return send_from_directory("legal", "cookies.html")
 
 
 @app.before_request

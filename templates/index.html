@@ -393,7 +393,31 @@
     /* -----------------------------------------------
        FOOTER
     ----------------------------------------------- */
-    footer { color: var(--muted); font-size: 0.8rem; }
+    footer {
+      color: var(--muted);
+      font-size: 0.8rem;
+      text-align: center;
+    }
+
+    .legal-links {
+      margin-top: 0.4rem;
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+    }
+
+    .legal-links a {
+      color: var(--muted);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      transition: color var(--transition), border-color var(--transition);
+    }
+
+    .legal-links a:hover {
+      color: var(--text);
+      border-color: var(--muted);
+    }
   </style>
 </head>
 
@@ -518,7 +542,14 @@
       Next Question →
     </button>
 
-    <footer>Made with Flask &amp; bad choices</footer>
+    <footer>
+      <div>Made with Flask &amp; bad choices</div>
+      <div class="legal-links">
+        <a href="/legal/cookies.html">Cookies</a>
+        <a href="/legal/privacy.html">Privacy</a>
+        <a href="/legal/terms.html">Terms</a>
+      </div>
+    </footer>
 
 
   </div>
